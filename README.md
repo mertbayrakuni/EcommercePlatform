@@ -1,6 +1,6 @@
 # ECommerce Platform
 
-![CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/mertbayrakuni/EcommercePlatform/actions/workflows/ci.yml/badge.svg)
 
 Microservices-based e-commerce backend built with .NET 10.
 
