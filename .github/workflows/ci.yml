@@ -34,7 +34,7 @@ jobs:
           dotnet test ECommercePlatform.slnx
           --no-build
           --configuration Release
-          --logger "trx;LogFileName=results.trx"
+          --logger trx
           --collect:"XPlat Code Coverage"
           --results-directory ./test-results
 
