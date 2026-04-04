@@ -1,0 +1,209 @@
+{
+  "info": {
+    "name": "ECommercePlatform - Quick API",
+    "_postman_id": "ecom-quick-collection",
+    "description": "Quick Postman collection for CatalogService and OrderService flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Catalog - Create Category",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5098/api/Categories",
+          "host": [ "http://localhost:5098" ],
+          "path": [ "api", "Categories" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Default\",\n  \"slug\": \"default\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Catalog - Create Product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5098/api/Products",
+          "host": [ "http://localhost:5098" ],
+          "path": [ "api", "Products" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Sample Product\",\n  \"price\": 19.99,\n  \"stock\": 100,\n  \"description\": \"Sample product for testing\",\n  \"sku\": \"SP-001\",\n  \"imageUrl\": null,\n  \"categoryId\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "Catalog - Get Product",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5098/api/Products/1",
+          "host": [ "http://localhost:5098" ],
+          "path": [ "api", "Products", "1" ]
+        }
+      }
+    },
+    {
+      "name": "Catalog - Decrease Inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5098/api/Inventory/decrease",
+          "host": [ "http://localhost:5098" ],
+          "path": [ "api", "Inventory", "decrease" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [ { \"productId\": 1, \"quantity\": 2 } ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Catalog - Increase Inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5098/api/Inventory/increase",
+          "host": [ "http://localhost:5098" ],
+          "path": [ "api", "Inventory", "increase" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [ { \"productId\": 1, \"quantity\": 2 } ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Order - Create Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders" ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerEmail\": \"alice@example.com\",\n  \"items\": [ { \"productId\": 1, \"quantity\": 2 } ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Order - Get By Id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders/1",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders", "1" ]
+        }
+      }
+    },
+    {
+      "name": "Order - Get All (paged)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders?page=1&pageSize=10",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders" ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "pageSize",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Order - Cancel",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders/1/cancel",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders", "1", "cancel" ]
+        }
+      }
+    },
+    {
+      "name": "Order - Mark Paid",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders/1/paid",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders", "1", "paid" ]
+        }
+      }
+    },
+    {
+      "name": "Order - Mark Shipped",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders/1/ship",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders", "1", "ship" ]
+        }
+      }
+    },
+    {
+      "name": "Order - Mark Delivered",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5099/api/Orders/1/deliver",
+          "host": [ "http://localhost:5099" ],
+          "path": [ "api", "Orders", "1", "deliver" ]
+        }
+      }
+    }
+  ]
+}

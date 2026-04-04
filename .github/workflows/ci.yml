@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore
+        run: dotnet restore ECommercePlatform.slnx
+
+      - name: Build
+        run: dotnet build ECommercePlatform.slnx --no-restore --configuration Release
+
+      - name: Test
+        run: >
+          dotnet test ECommercePlatform.slnx
+          --no-build
+          --configuration Release
+          --logger "trx;LogFileName=results.trx"
+          --collect:"XPlat Code Coverage"
+          --results-directory ./test-results
+
+      - name: Test Report
+        uses: dorny/test-reporter@v2
+        if: always()
+        with:
+          name: xUnit Test Results
+          path: ./test-results/**/*.trx
+          reporter: dotnet-trx
+          fail-on-error: false
+
+      - name: Generate coverage report
+        if: always()
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool
+          reportgenerator \
+            -reports:"./test-results/**/coverage.cobertura.xml" \
+            -targetdir:"./coverage-report" \
+            -reporttypes:"Html;MarkdownSummaryGithub"
+
+      - name: Coverage summary
+        if: always()
+        run: cat ./coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./coverage-report/
+          if-no-files-found: warn

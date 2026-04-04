@@ -1,0 +1,102 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ecommerce-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: catalogdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d catalogdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ecommerce-rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  catalogservice:
+    build:
+      context: ./CatalogService
+      dockerfile: Dockerfile
+    container_name: catalogservice
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__CatalogDb: Host=postgres;Port=5432;Database=catalogdb;Username=postgres;Password=postgres
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: guest
+      RabbitMQ__Pass: guest
+    ports:
+      - "5098:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      paymentservice:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  paymentservice:
+    build:
+      context: ./PaymentService
+      dockerfile: Dockerfile
+    container_name: paymentservice
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__PaymentDb: Host=postgres;Port=5432;Database=paymentdb;Username=postgres;Password=postgres
+    ports:
+      - "5100:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  orderservice:
+    build:
+      context: ./OrderService
+      dockerfile: Dockerfile
+    container_name: orderservice
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__OrderDb: Host=postgres;Port=5432;Database=orderdb;Username=postgres;Password=postgres
+      CatalogService__BaseUrl: http://catalogservice:8080
+      PaymentService__BaseUrl: http://paymentservice:8080
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: guest
+      RabbitMQ__Pass: guest
+    ports:
+      - "5099:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalogservice:
+        condition: service_healthy
+      paymentservice:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pgdata:
