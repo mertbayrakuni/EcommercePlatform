@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 
@@ -12,7 +13,7 @@ public sealed class RabbitPublisher : IRabbitPublisher, IAsyncDisposable
 {
     private readonly RabbitMQ.Client.ConnectionFactory _factory;
     private readonly ILogger<RabbitPublisher> _logger;
-    private readonly HashSet<string> _declaredExchanges = new();
+    private readonly ConcurrentDictionary<string, byte> _declaredExchanges = new();
     private readonly SemaphoreSlim _initLock = new(1, 1);
 
     private RabbitMQ.Client.IConnection? _conn;
@@ -69,7 +70,7 @@ public sealed class RabbitPublisher : IRabbitPublisher, IAsyncDisposable
             {
                 await EnsureInitializedAsync();
 
-                if (_declaredExchanges.Add(exchange))
+                if (_declaredExchanges.TryAdd(exchange, 0))
                     await _channel!.ExchangeDeclareAsync(
                         exchange: exchange,
                         type: RabbitMQ.Client.ExchangeType.Direct,

@@ -238,15 +238,19 @@ public sealed class OrderService : IOrderService
             }).ToList()
         };
 
+        // Save order first so a DB failure never leaves inventory decremented with no order record.
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync(ct);
+
         var decResp = await client.PostAsJsonAsync("/api/Inventory/decrease", decReq, ct);
         if (!decResp.IsSuccessStatusCode)
         {
+            // Compensate: remove the saved order so we don't leave an orphaned Pending record.
+            _db.Orders.Remove(order);
+            await _db.SaveChangesAsync(ct);
             var msg = await decResp.Content.ReadAsStringAsync(ct);
             throw new InvalidOperationException($"Stock decrease failed: {msg}");
         }
-
-        _db.Orders.Add(order);
-        await _db.SaveChangesAsync(ct);
 
         // publish OrderCreated event (fire-and-forget)
         try

@@ -13,14 +13,14 @@ public sealed class PaymentProcessor : IPaymentProcessor
 
     public async Task<PaymentResultDto> ProcessAsync(PaymentRequestDto req)
     {
-        // Idempotency — return the stored result if this order was already processed
-        var existing = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == req.OrderId);
+        // Idempotency — only deduplicate successful payments to prevent double-charging.
+        // Failed payments are retryable: a previous failure should not block a future attempt.
+        var existing = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == req.OrderId && p.Succeeded);
         if (existing is not null)
             return new PaymentResultDto
             {
-                Succeeded = existing.Succeeded,
-                TransactionId = existing.TransactionId,
-                ErrorMessage = existing.ErrorMessage
+                Succeeded = true,
+                TransactionId = existing.TransactionId
             };
 
         var result = req.SimulateFailure

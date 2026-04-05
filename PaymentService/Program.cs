@@ -23,6 +23,9 @@ builder.Services.AddDbContext<PaymentDbContext>(options =>
 
 builder.Services.AddScoped<IPaymentProcessor, PaymentProcessor>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<PaymentDbContext>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -38,5 +41,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.MapGet("/", () => "PaymentService is running ✅");
 app.Run();
