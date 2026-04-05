@@ -3,6 +3,7 @@
     <File Path="docker-compose.yml" />
     <File Path="OrderPlatform.postman_collection.json" />
   </Folder>
+  <Project Path="ApiGateway/ApiGateway.csproj" />
   <Project Path="CatalogService.Tests/CatalogService.Tests.csproj" />
   <Project Path="CatalogService/CatalogService.csproj" />
   <Project Path="OrderService.Tests/OrderService.Tests.csproj" />
