@@ -9,4 +9,6 @@
   <Project Path="OrderService/OrderService.csproj" />
   <Project Path="PaymentService.Tests/PaymentService.Tests.csproj" />
   <Project Path="PaymentService/PaymentService.csproj" />
+  <Project Path="UserService.Tests/UserService.Tests.csproj" />
+  <Project Path="UserService/UserService.csproj" />
 </Solution>
