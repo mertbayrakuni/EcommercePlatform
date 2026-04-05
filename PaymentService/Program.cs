@@ -40,4 +40,3 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 app.MapGet("/", () => "PaymentService is running ✅");
 app.Run();
-app.Run();

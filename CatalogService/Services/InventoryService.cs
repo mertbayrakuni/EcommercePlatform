@@ -99,9 +99,6 @@ public sealed class InventoryService : IInventoryService
         foreach (var it in merged)
         {
             var p = products.First(x => x.Id == it.ProductId);
-            if (!p.IsActive)
-                throw new InvalidOperationException($"Product inactive: {p.Id}");
-
             p.Stock += it.Quantity;
             p.UpdatedAt = DateTime.UtcNow;
         }

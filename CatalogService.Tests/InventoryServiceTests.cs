@@ -163,6 +163,18 @@ public class InventoryServiceTests : IDisposable
         Assert.Contains("Missing products", ex.Message);
     }
 
+    [Fact]
+    public async Task IncreaseStockAsync_InactiveProduct_StillRestoresStock()
+    {
+        // Product 3 is inactive — stock restore on cancellation must succeed regardless
+        var result = await _sut.IncreaseStockAsync(Req((3, 2)));
+
+        Assert.Equal(7, result.Items[0].NewStock);
+
+        var product = await _db.Products.FindAsync(3);
+        Assert.Equal(7, product!.Stock);
+    }
+
     public void Dispose()
     {
         _db.Dispose();
