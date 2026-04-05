@@ -34,7 +34,7 @@ public sealed class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             FirstName = dto.FirstName.Trim(),
             LastName = dto.LastName.Trim(),
-            Role = "Customer",
+            Role = await _db.Users.AnyAsync(ct) ? UserRoles.Customer : UserRoles.Admin,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -86,6 +86,29 @@ public sealed class AuthService : IAuthService
             LastName = user.LastName,
             Role = user.Role,
             ExpiresAt = expiresAt
+        };
+    }
+
+    public async Task<UserProfileDto> ChangeRoleAsync(int userId, string newRole, CancellationToken ct = default)
+    {
+        if (newRole != UserRoles.Admin && newRole != UserRoles.Customer)
+            throw new InvalidOperationException($"Invalid role '{newRole}'. Valid roles: {UserRoles.Admin}, {UserRoles.Customer}.");
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
+            ?? throw new KeyNotFoundException($"User {userId} not found.");
+
+        user.Role = newRole;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role,
+            CreatedAt = user.CreatedAt
         };
     }
 

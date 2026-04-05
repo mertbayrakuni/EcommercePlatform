@@ -3,6 +3,10 @@ using OrderService.Dtos;
 
 namespace OrderService.Services;
 
+/// <summary>
+/// Core order operations: creation, retrieval, payment and status transitions.
+/// All state changes are validated through <see cref="OrderStateMachine"/>.
+/// </summary>
 public interface IOrderService
 {
     Task<OrderResponseDto> CreateAsync(CreateOrderRequestDto req, CancellationToken ct = default);

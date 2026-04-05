@@ -2,6 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UserService.Models;
 
+/// <summary>
+/// Represents a registered user. Role is stored as a plain string
+/// and included as a claim in the issued JWT.
+/// </summary>
 public class User
 {
     public int Id { get; set; }

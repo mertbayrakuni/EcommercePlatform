@@ -6,6 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CatalogService.Services;
 
+/// <summary>
+/// Handles product queries and mutations. Supports rich filtering (search, category,
+/// price range), multiple sort orders and pagination. Inactive products are hidden
+/// from public results unless <c>includeInactive</c> is explicitly requested.
+/// </summary>
 public sealed class ProductService : IProductService
 {
     private readonly CatalogDbContext _db;

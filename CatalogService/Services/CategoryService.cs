@@ -6,6 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CatalogService.Services;
 
+/// <summary>
+/// Manages product categories. Slugs must be unique across active categories.
+/// Deletion is soft (sets <c>IsActive = false</c>) to preserve referential integrity.
+/// </summary>
 public sealed class CategoryService : ICategoryService
 {
     private readonly CatalogDbContext _db;

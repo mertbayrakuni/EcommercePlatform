@@ -7,6 +7,11 @@ using System.Text.Json;
 
 namespace CatalogService.Infrastructure;
 
+/// <summary>
+/// Background service that consumes events from the RabbitMQ "orders" exchange.
+/// Currently handles <c>order.cancelled</c> events to restore inventory stock.
+/// Reconnects automatically with exponential back-off on connection failures.
+/// </summary>
 public sealed class OrderEventConsumer : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;

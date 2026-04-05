@@ -2,6 +2,9 @@
 
 namespace CatalogService.Models
 {
+    /// <summary>
+    /// Product category. Uses a URL-friendly <c>Slug</c> alongside the display <c>Name</c>.
+    /// </summary>
     public class Category
     {
         public int Id { get; set; }

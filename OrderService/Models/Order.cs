@@ -2,6 +2,10 @@
 
 namespace OrderService.Models;
 
+/// <summary>
+/// Aggregate root for an order. Status transitions are governed
+/// by <see cref="OrderService.Services.OrderStateMachine"/>.
+/// </summary>
 public class Order
 {
     public int Id { get; set; }

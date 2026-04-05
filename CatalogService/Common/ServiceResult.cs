@@ -1,5 +1,10 @@
 ﻿namespace CatalogService.Common;
 
+/// <summary>
+/// Discriminated result returned by service methods instead of throwing exceptions.
+/// Controllers map <see cref="ResultStatus"/> values to appropriate HTTP status codes.
+/// </summary>
+
 public enum ResultStatus
 {
     Success,

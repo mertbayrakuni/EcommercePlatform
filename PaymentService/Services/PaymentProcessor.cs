@@ -5,6 +5,10 @@ using PaymentService.Models;
 
 namespace PaymentService.Services;
 
+/// <summary>
+/// Simulates payment processing and persists the result.
+/// Set <c>SimulateFailure = true</c> on the request to test failure paths.
+/// </summary>
 public sealed class PaymentProcessor : IPaymentProcessor
 {
     private readonly PaymentDbContext _db;

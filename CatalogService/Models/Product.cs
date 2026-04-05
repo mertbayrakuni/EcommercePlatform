@@ -3,6 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CatalogService.Models
 {
+    /// <summary>
+    /// Catalogue product with pricing, stock and optional category association.
+    /// Price is stored as numeric(18,2). Stock is managed by <see cref="CatalogService.Services.InventoryService"/>.
+    /// </summary>
     public class Product
     {
         public int Id { get; set; }

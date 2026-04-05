@@ -1,0 +1,140 @@
+@gateway = http://localhost:5000
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW TO USE IN VISUAL STUDIO
+#   1. Click the green ▶ "Send Request" button that appears above each ###
+#   2. Run ### Register once (skip if already done)
+#   3. Run ### Login — the JWT token is captured automatically, no copy-paste
+#   4. Every protected request below picks it up via {{login.response.body.$.token}}
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ── Auth ─────────────────────────────────────────────────────────────────────
+
+### Register
+POST {{gateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "ipek@bambicim.com",
+  "password": "Test1234!",
+  "firstName": "İpek",
+  "lastName": "Bayrak"
+}
+
+### Login  ← run this before any 🔒 request
+# @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ipek@bambicim.com",
+  "password": "Test1234!"
+}
+
+### Get my profile  🔒
+GET {{gateway}}/api/auth/me
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Change a user's role  🔒 Admin only
+PATCH {{gateway}}/api/auth/2/role
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "role": "Admin"
+}
+
+
+# ── Catalog — public ─────────────────────────────────────────────────────────
+
+### List all products
+GET {{gateway}}/api/products
+
+### Get single product
+GET {{gateway}}/api/products/1
+
+### List all categories
+GET {{gateway}}/api/categories
+
+
+# ── Inventory — protected ────────────────────────────────────────────────────
+
+### Decrease stock  🔒
+POST {{gateway}}/api/inventory/decrease
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "items": [{ "productId": 1, "quantity": 1 }]
+}
+
+
+# ── Orders — protected ───────────────────────────────────────────────────────
+
+### Create order  🔒
+POST {{gateway}}/api/orders
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "customerEmail": "ipek@bambicim.com",
+  "items": [{ "productId": 1, "quantity": 2 }]
+}
+
+### Get all orders  🔒
+GET {{gateway}}/api/orders
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Get single order  🔒
+GET {{gateway}}/api/orders/1
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Cancel order  🔒
+POST {{gateway}}/api/orders/1/cancel
+Authorization: Bearer {{login.response.body.$.token}}
+
+
+# ── Payments — protected ─────────────────────────────────────────────────────
+
+### Process payment  🔒
+POST {{gateway}}/api/payments/pay
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "orderId": 1,
+  "amount": 99.99,
+  "method": "CreditCard",
+  "simulateFailure": false
+}
+
+### Simulate failed payment  🔒
+POST {{gateway}}/api/payments/pay
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "orderId": 99,
+  "amount": 9.99,
+  "method": "CreditCard",
+  "simulateFailure": true
+}
+
+
+# ── Health checks ─────────────────────────────────────────────────────────────
+
+### Gateway
+GET {{gateway}}/health
+
+### UserService
+GET http://localhost:5101/health
+
+### CatalogService
+GET http://localhost:5098/health
+
+### OrderService
+GET http://localhost:5099/health
+
+### PaymentService
+GET http://localhost:5100/health
