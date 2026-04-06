@@ -81,8 +81,20 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RegisterAsync_FirstUser_HasAdminRole()
+    {
+        // Empty DB — the very first registration should receive Admin
+        var result = await _sut.RegisterAsync(Reg());
+
+        Assert.Equal("Admin", result.Role);
+    }
+
+    [Fact]
     public async Task RegisterAsync_NewUser_HasCustomerRole()
     {
+        // Pre-seed a first user so this registration is not the first
+        await _sut.RegisterAsync(Reg(email: "first@example.com"));
+
         var result = await _sut.RegisterAsync(Reg());
 
         Assert.Equal("Customer", result.Role);
@@ -178,6 +190,39 @@ public class AuthServiceTests : IDisposable
         var profile = await _sut.GetProfileAsync(999);
 
         Assert.Null(profile);
+    }
+
+    // ── ChangeRoleAsync ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ChangeRoleAsync_ValidRole_UpdatesRole()
+    {
+        await _sut.RegisterAsync(Reg()); // first user → Admin
+        var user = await _db.Users.SingleAsync();
+
+        var result = await _sut.ChangeRoleAsync(user.Id, "Customer");
+
+        Assert.Equal("Customer", result.Role);
+        Assert.Equal("Customer", (await _db.Users.SingleAsync()).Role);
+    }
+
+    [Fact]
+    public async Task ChangeRoleAsync_InvalidRole_Throws()
+    {
+        await _sut.RegisterAsync(Reg());
+        var user = await _db.Users.SingleAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _sut.ChangeRoleAsync(user.Id, "SuperAdmin"));
+
+        Assert.Contains("Invalid role", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ChangeRoleAsync_UnknownUser_Throws()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => _sut.ChangeRoleAsync(999, "Customer"));
     }
 
     public void Dispose()
