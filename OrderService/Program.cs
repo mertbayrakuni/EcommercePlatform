@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Infrastructure;
+using Scalar.AspNetCore;
 using Serilog;
 using OrderService.Services;
 using Polly;
@@ -18,8 +19,15 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((doc, ctx, ct) =>
+    {
+        doc.Info.Title = "OrderService API";
+        doc.Info.Description = "Order placement, tracking & cancellation";
+        return Task.CompletedTask;
+    });
+});
 
 // Register the named HttpClient used to call CatalogService. Polly policies
 // are configured to improve resilience on transient network failures.
@@ -84,8 +92,16 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options
+        .WithTitle("OrderService API")
+        .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+        .WithPreferredScheme("Bearer")
+        .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
+});
 
 app.MapHealthChecks("/health");
 

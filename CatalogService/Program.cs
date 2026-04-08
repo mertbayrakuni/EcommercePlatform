@@ -2,6 +2,7 @@ using CatalogService.Data;
 using CatalogService.Infrastructure;
 using CatalogService.Services;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using Serilog;
 using System.Text.Json.Serialization;
 
@@ -21,14 +22,14 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-builder.Services.AddEndpointsApiExplorer();
-
-// Swagger
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi(options =>
 {
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    c.IncludeXmlComments(xmlPath);
+    options.AddDocumentTransformer((doc, ctx, ct) =>
+    {
+        doc.Info.Title = "CatalogService API";
+        doc.Info.Description = "Products, categories & inventory management";
+        return Task.CompletedTask;
+    });
 });
 
 builder.Services.AddDbContext<CatalogDbContext>(options =>
@@ -51,8 +52,16 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+app.MapOpenApi();
+app.MapScalarApiReference(options =>
+{
+    options
+        .WithTitle("CatalogService API")
+        .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+        .WithPreferredScheme("Bearer")
+        .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
+});
 
 // app.UseHttpsRedirection();
 

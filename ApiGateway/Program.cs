@@ -84,7 +84,7 @@ app.MapGet("/", () => Results.Content("""
         .btn-row { display: flex; gap: 8px; }
         a.btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: 500; text-decoration: none; transition: opacity 0.15s; }
         a.btn:hover { opacity: 0.75; }
-        a.btn-sw { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb44; }
+        a.btn-scalar { background: #ff6c3722; color: #ff6c37; border: 1px solid #ff6c3744; }
         a.btn-hl { background: #3fb95022; color: #3fb950; border: 1px solid #3fb95044; }
         table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; font-size: 0.82rem; }
         th { padding: 10px 16px; text-align: left; background: #0d1117; color: #8b949e; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid #21262d; }
@@ -115,7 +115,7 @@ app.MapGet("/", () => Results.Content("""
                 <div class="ep"><span class="m GET">GET</span>/api/auth/me</div>
               </div>
               <div class="btn-row">
-                <a class="btn btn-sw" href="http://localhost:5101/swagger" target="_blank">&#11041; Swagger</a>
+                <a class="btn btn-scalar" href="http://localhost:5101/scalar/v1" target="_blank">&#9670; Scalar</a>
                 <a class="btn btn-hl" href="http://localhost:5101/health" target="_blank">&#9825; Health</a>
               </div>
             </div>
@@ -128,7 +128,7 @@ app.MapGet("/", () => Results.Content("""
                 <div class="ep"><span class="m GET">GET</span>/api/inventory</div>
               </div>
               <div class="btn-row">
-                <a class="btn btn-sw" href="http://localhost:5098/swagger" target="_blank">&#11041; Swagger</a>
+                <a class="btn btn-scalar" href="http://localhost:5098/scalar/v1" target="_blank">&#9670; Scalar</a>
                 <a class="btn btn-hl" href="http://localhost:5098/health" target="_blank">&#9825; Health</a>
               </div>
             </div>
@@ -141,7 +141,7 @@ app.MapGet("/", () => Results.Content("""
                 <div class="ep"><span class="m POST">POST</span>/api/orders/{id}/cancel</div>
               </div>
               <div class="btn-row">
-                <a class="btn btn-sw" href="http://localhost:5099/swagger" target="_blank">&#11041; Swagger</a>
+                <a class="btn btn-scalar" href="http://localhost:5099/scalar/v1" target="_blank">&#9670; Scalar</a>
                 <a class="btn btn-hl" href="http://localhost:5099/health" target="_blank">&#9825; Health</a>
               </div>
             </div>
@@ -151,7 +151,7 @@ app.MapGet("/", () => Results.Content("""
                 <div class="ep"><span class="m POST">POST</span>/api/payments/pay</div>
               </div>
               <div class="btn-row">
-                <a class="btn btn-sw" href="http://localhost:5100/swagger" target="_blank">&#11041; Swagger</a>
+                <a class="btn btn-scalar" href="http://localhost:5100/scalar/v1" target="_blank">&#9670; Scalar</a>
                 <a class="btn btn-hl" href="http://localhost:5100/health" target="_blank">&#9825; Health</a>
               </div>
             </div>
