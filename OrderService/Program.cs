@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using OrderService.Data;
 using OrderService.Infrastructure;
 using Scalar.AspNetCore;
@@ -25,6 +26,20 @@ builder.Services.AddOpenApi(options =>
     {
         doc.Info.Title = "OrderService API";
         doc.Info.Description = "Order placement, tracking & cancellation";
+        doc.Info.Contact = new OpenApiContact
+        {
+            Name = "ECommercePlatform",
+            Url = new Uri("https://github.com/mertbayrakuni/EcommercePlatform")
+        };
+        doc.Servers =
+        [
+            new OpenApiServer { Url = "http://localhost:5099", Description = "Local development" },
+            new OpenApiServer { Url = "http://orderservice:8080", Description = "Docker" }
+        ];
+        doc.Tags = new HashSet<OpenApiTag>
+        {
+            new OpenApiTag { Name = "Orders", Description = "Order placement, status tracking & cancellation" }
+        };
         return Task.CompletedTask;
     });
 });
@@ -98,6 +113,7 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("OrderService API")
         .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultFonts(false)
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
         .WithPreferredScheme("Bearer")
         .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");

@@ -1,7 +1,9 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
 using UserService.Data;
@@ -23,6 +25,35 @@ builder.Services.AddOpenApi(options =>
     {
         doc.Info.Title = "UserService API";
         doc.Info.Description = "JWT authentication, registration & user management";
+        doc.Info.Contact = new OpenApiContact
+        {
+            Name = "ECommercePlatform",
+            Url = new Uri("https://github.com/mertbayrakuni/EcommercePlatform")
+        };
+        doc.Servers =
+        [
+            new OpenApiServer { Url = "http://localhost:5101", Description = "Local development" },
+            new OpenApiServer { Url = "http://userservice:8080", Description = "Docker" }
+        ];
+        doc.Tags = new HashSet<OpenApiTag>
+        {
+            new OpenApiTag { Name = "Auth", Description = "Register, login & JWT token management" }
+        };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, ct) =>
+    {
+        var path = context.Description.RelativePath ?? "";
+        if (path.Contains("login", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var loginBody) == true)
+        {
+            loginBody.Example = JsonNode.Parse("""{"email":"admin@example.com","password":"Password123"}""");
+        }
+        if (path.Contains("register", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var regBody) == true)
+        {
+            regBody.Example = JsonNode.Parse("""{"email":"user@example.com","password":"Password123","firstName":"Demo","lastName":"User"}""");
+        }
         return Task.CompletedTask;
     });
 });
@@ -67,6 +98,7 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("UserService API")
         .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultFonts(false)
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
         .WithPreferredScheme("Bearer")
         .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");

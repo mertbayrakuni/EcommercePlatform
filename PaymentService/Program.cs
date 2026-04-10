@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using PaymentService.Data;
 using PaymentService.Services;
 using Scalar.AspNetCore;
@@ -20,6 +21,20 @@ builder.Services.AddOpenApi(options =>
     {
         doc.Info.Title = "PaymentService API";
         doc.Info.Description = "Payment processing & transaction records";
+        doc.Info.Contact = new OpenApiContact
+        {
+            Name = "ECommercePlatform",
+            Url = new Uri("https://github.com/mertbayrakuni/EcommercePlatform")
+        };
+        doc.Servers =
+        [
+            new OpenApiServer { Url = "http://localhost:5100", Description = "Local development" },
+            new OpenApiServer { Url = "http://paymentservice:8080", Description = "Docker" }
+        ];
+        doc.Tags = new HashSet<OpenApiTag>
+        {
+            new OpenApiTag { Name = "Payments", Description = "Payment processing & transaction history" }
+        };
         return Task.CompletedTask;
     });
 });
@@ -46,6 +61,7 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("PaymentService API")
         .WithTheme(ScalarTheme.DeepSpace)
+        .WithDefaultFonts(false)
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
         .WithPreferredScheme("Bearer")
         .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
