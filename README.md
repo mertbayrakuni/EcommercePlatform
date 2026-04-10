@@ -53,7 +53,7 @@ Infrastructure
 - **Messaging** — RabbitMQ via `RabbitMQ.Client` (direct exchange, durable queues)
 - **Resilience** — Polly retry + circuit breaker on inter-service HTTP calls
 - **Logging** — Serilog → console (structured JSON in production)
-- **Docs** — Swagger / OpenAPI on each service
+- **Docs** — Scalar 2.13 API Explorer + built-in .NET 10 OpenAPI (`/scalar/v1`, `/openapi/v1.json` per service)
 - **Containers** — Docker + Docker Compose
 
 ---
@@ -75,16 +75,18 @@ All services, databases and the message broker start automatically. EF Core migr
 
 ### Dashboard
 
-Open **http://localhost:5000** for the live service dashboard — shows all services with real-time health indicators and links to each Swagger UI.
+Open **http://localhost:5000** for the live service dashboard — shows all services with a real-time **online counter**, per-service health indicators, and links to each Scalar API explorer and raw OpenAPI spec.
 
-### Swagger UIs
+### API Explorer (Scalar)
 
-| Service | URL |
-|---|---|
-| UserService | http://localhost:5101/swagger |
-| CatalogService | http://localhost:5098/swagger |
-| OrderService | http://localhost:5099/swagger |
-| PaymentService | http://localhost:5100/swagger |
+| Service | Scalar UI | Raw OpenAPI Spec |
+|---|---|---|
+| UserService | http://localhost:5101/scalar/v1 | http://localhost:5101/openapi/v1.json |
+| CatalogService | http://localhost:5098/scalar/v1 | http://localhost:5098/openapi/v1.json |
+| OrderService | http://localhost:5099/scalar/v1 | http://localhost:5099/openapi/v1.json |
+| PaymentService | http://localhost:5100/scalar/v1 | http://localhost:5100/openapi/v1.json |
+
+Scalar is pre-configured with the **DeepSpace theme**, **C# HttpClient** as the default code-snippet language, and a **Bearer token field** so you can paste a JWT and hit protected endpoints directly from the browser.
 
 ---
 
@@ -156,6 +158,7 @@ Invalid transitions return `400 Bad Request` with the list of allowed next state
 
 | Exchange | Routing Key | Publisher | Consumer | Effect |
 |---|---|---|---|---|
+| `orders` | `order.created` | OrderService | — | Logged / extensible |
 | `orders` | `order.paid` | OrderService | — | Logged / extensible |
 | `orders` | `order.cancelled` | OrderService | CatalogService | Restores product stock |
 
