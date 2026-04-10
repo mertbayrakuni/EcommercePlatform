@@ -17,7 +17,7 @@ namespace DataSeeder
             var users = new List<(int Id, string Email)>();
             var categories = new List<int>();
             var products = new List<(int Id, decimal Price, string Sku, string Name)>();
-            var orders = new List<(int Id, decimal TotalAmount)>();
+            var orderData = new List<(int OrderId, decimal Amount, string Method, bool Succeeded, string? ErrorMsg)>();
 
             // 1. userdb - Users
             await using (var conn = new NpgsqlConnection("Host=127.0.0.1;Port=5432;Database=userdb;Username=postgres;Password=postgres"))
@@ -108,6 +108,9 @@ namespace DataSeeder
                 await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Orders\", \"OrderItems\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
 
                 var faker = new Faker("en");
+                var methods = new[] { "pm_card_visa", "pm_card_chargeDeclined", "pm_card_chargeDeclinedInsufficientFunds", "pm_card_authenticationRequired" };
+                var successStatuses = new[] { "Paid", "Shipped", "Delivered", "Completed" };
+                var failStatuses = new[] { "Pending", "Cancelled" };
                 
                 for (int i = 0; i < 100; i++)
                 {
@@ -115,14 +118,21 @@ namespace DataSeeder
                     var prod = faker.PickRandom(products);
                     var amount = prod.Price;
                     
+                    var method = faker.PickRandom(methods);
+                    var succeeded = method == "pm_card_visa";
+                    var status = succeeded ? faker.PickRandom(successStatuses) : faker.PickRandom(failStatuses);
+                    var errorMsg = succeeded ? null : $"Mock decline for {method}";
+                    
                     var sqlOrder = @"INSERT INTO ""Orders"" (""CustomerEmail"", ""TotalAmount"", ""Status"", ""CreatedAt"", ""UpdatedAt"")
-                                     VALUES (@c, @t, 'Completed', @dt, @dt) RETURNING ""Id"";";
+                                     VALUES (@c, @t, @st, @dt, @dt) RETURNING ""Id"";";
                     await using var cmdOrder = new NpgsqlCommand(sqlOrder, conn);
                     cmdOrder.Parameters.AddWithValue("c", user.Email);
                     cmdOrder.Parameters.AddWithValue("t", amount);
+                    cmdOrder.Parameters.AddWithValue("st", status);
                     cmdOrder.Parameters.AddWithValue("dt", DateTime.UtcNow);
                     var orderId = (int)(await cmdOrder.ExecuteScalarAsync() ?? 0);
-                    orders.Add((orderId, amount));
+                    
+                    orderData.Add((orderId, amount, method, succeeded, errorMsg));
 
                     var sqlItem = @"INSERT INTO ""OrderItems"" (""OrderId"", ""ProductId"", ""ProductName"", ""ProductSku"", ""UnitPrice"", ""Quantity"", ""LineTotal"")
                                     VALUES (@oid, @pid, @pn, @psku, @up, 1, @lt);";
@@ -135,7 +145,7 @@ namespace DataSeeder
                     cmdItem.Parameters.AddWithValue("lt", prod.Price);
                     await cmdItem.ExecuteNonQueryAsync();
                 }
-                Console.WriteLine($"Seeded {orders.Count} orders with items into orderdb.");
+                Console.WriteLine($"Seeded {orderData.Count} orders with items into orderdb.");
             }
 
             // 4. paymentdb - Payments
@@ -146,33 +156,27 @@ namespace DataSeeder
 
                 var faker = new Faker("en");
                 
-                var methods = new[] { "pm_card_visa", "pm_card_chargeDeclined", "pm_card_chargeDeclinedInsufficientFunds", "pm_card_authenticationRequired" };
-                
-                foreach (var order in orders)
+                foreach (var data in orderData)
                 {
                     var sql = @"INSERT INTO ""Payments"" (""OrderId"", ""TransactionId"", ""Amount"", ""Method"", ""Succeeded"", ""ErrorMessage"", ""ProcessedAt"")
                                 VALUES (@o, @t, @a, @m, @s, @err, @dt);";
                                 
-                    var method = faker.PickRandom(methods);
-                    var succeeded = method == "pm_card_visa";
-                    var errorMsg = succeeded ? null : $"Mock decline for {method}";
-                                
                     await using var cmd = new NpgsqlCommand(sql, conn);
-                    cmd.Parameters.AddWithValue("o", order.Id);
+                    cmd.Parameters.AddWithValue("o", data.OrderId);
                     cmd.Parameters.AddWithValue("t", "tx_" + faker.Random.AlphaNumeric(10));
-                    cmd.Parameters.AddWithValue("a", order.TotalAmount);
-                    cmd.Parameters.AddWithValue("m", method);
-                    cmd.Parameters.AddWithValue("s", succeeded);
+                    cmd.Parameters.AddWithValue("a", data.Amount);
+                    cmd.Parameters.AddWithValue("m", data.Method);
+                    cmd.Parameters.AddWithValue("s", data.Succeeded);
                     
-                    if (errorMsg == null)
+                    if (data.ErrorMsg == null)
                         cmd.Parameters.AddWithValue("err", DBNull.Value);
                     else
-                        cmd.Parameters.AddWithValue("err", errorMsg);
+                        cmd.Parameters.AddWithValue("err", data.ErrorMsg);
                         
                     cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
                     await cmd.ExecuteNonQueryAsync();
                 }
-                Console.WriteLine($"Seeded {orders.Count} payments into paymentdb.");
+                Console.WriteLine($"Seeded {orderData.Count} payments into paymentdb.");
             }
 
             Console.WriteLine("Successfully finished database seeding!");
