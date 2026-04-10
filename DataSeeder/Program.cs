@@ -11,7 +11,8 @@ namespace DataSeeder
         static async Task Main(string[] args)
         {
             Console.WriteLine("Starting data seeding...");
-            var defaultPassword = "$2a$11$wK1W2/uQ51LhO0z9HlD.1ulm7C82rG8M9BfX97H9mKzP.0m2I6m1C"; // Password123!
+            var defaultPassword = BCrypt.Net.BCrypt.HashPassword("Password123!");
+            var adminPassword = BCrypt.Net.BCrypt.HashPassword("Test1234!");
 
             var users = new List<(int Id, string Email)>();
             var categories = new List<int>();
@@ -25,6 +26,19 @@ namespace DataSeeder
                 await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Users\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
 
                 var faker = new Faker("en");
+                
+                // Add Admin Account
+                var adminSql = @"INSERT INTO ""Users"" (""FirstName"", ""LastName"", ""Email"", ""PasswordHash"", ""Role"", ""CreatedAt"", ""UpdatedAt"")
+                            VALUES (@f, @l, @e, @pw, 'Admin', @dt, @dt) RETURNING ""Id"";";
+                await using var adminCmd = new NpgsqlCommand(adminSql, conn);
+                adminCmd.Parameters.AddWithValue("f", "İpek");
+                adminCmd.Parameters.AddWithValue("l", "Bayrak");
+                adminCmd.Parameters.AddWithValue("e", "ipek@bambicim.com");
+                adminCmd.Parameters.AddWithValue("pw", adminPassword);
+                adminCmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
+                var adminId = (int)(await adminCmd.ExecuteScalarAsync());
+                users.Add((adminId, "ipek@bambicim.com"));
+                
                 for (int i = 0; i < 100; i++)
                 {
                     var email = faker.Internet.Email().ToLower();

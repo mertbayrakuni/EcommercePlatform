@@ -11,7 +11,7 @@
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
-### Register
+### Register Admin directly (or seed data handles it)
 POST {{gateway}}/api/auth/register
 Content-Type: application/json
 
@@ -46,19 +46,88 @@ Content-Type: application/json
 }
 
 
-# ── Catalog — public ─────────────────────────────────────────────────────────
+# ── Categories ───────────────────────────────────────────────────────────────
 
-### List all products
-GET {{gateway}}/api/products
-
-### Get single product
-GET {{gateway}}/api/products/1
-
-### List all categories
+### List all categories  🔒 (Gateway policy restricts this currently)
 GET {{gateway}}/api/categories
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Get single category  🔒
+GET {{gateway}}/api/categories/1
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Create category  🔒 Admin only
+POST {{gateway}}/api/categories
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "New Footwear",
+  "slug": "new-footwear"
+}
+
+### Update category  🔒 Admin only
+PUT {{gateway}}/api/categories/1
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Footwear",
+  "slug": "updated-footwear",
+  "isActive": true
+}
+
+### Delete category  🔒 Admin only
+DELETE {{gateway}}/api/categories/1
+Authorization: Bearer {{login.response.body.$.token}}
 
 
-# ── Inventory — protected ────────────────────────────────────────────────────
+# ── Products ─────────────────────────────────────────────────────────────────
+
+### List all products  🔒 (Gateway config currently defaults to requiring auth)
+GET {{gateway}}/api/products?page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Get single product  🔒
+GET {{gateway}}/api/products/1
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Create product  🔒 Admin only
+POST {{gateway}}/api/products
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Smart Watch",
+  "categoryId": 1,
+  "price": 199.99,
+  "stock": 50,
+  "sku": "WATCH-100",
+  "description": "Latest smart watch",
+  "imageUrl": "https://example.com/watch.jpg"
+}
+
+### Update product  🔒 Admin only
+PUT {{gateway}}/api/products/1
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "name": "Smart Watch Pro",
+  "categoryId": 1,
+  "price": 249.99,
+  "stock": 40,
+  "sku": "WATCH-100-PRO",
+  "description": "Updated model",
+  "visible": true
+}
+
+### Delete product  🔒 Admin only
+DELETE {{gateway}}/api/products/1
+Authorization: Bearer {{login.response.body.$.token}}
+
+
+# ── Inventory ────────────────────────────────────────────────────────────────
 
 ### Decrease stock  🔒
 POST {{gateway}}/api/inventory/decrease
@@ -70,7 +139,15 @@ Content-Type: application/json
 }
 
 
-# ── Orders — protected ───────────────────────────────────────────────────────
+# ── Orders ───────────────────────────────────────────────────────────────────
+
+### Get all orders  🔒
+GET {{gateway}}/api/orders?page=1&pageSize=10
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Get single order  🔒
+GET {{gateway}}/api/orders/1
+Authorization: Bearer {{login.response.body.$.token}}
 
 ### Create order  🔒
 POST {{gateway}}/api/orders
@@ -82,22 +159,38 @@ Content-Type: application/json
   "items": [{ "productId": 1, "quantity": 2 }]
 }
 
-### Get all orders  🔒
-GET {{gateway}}/api/orders
-Authorization: Bearer {{login.response.body.$.token}}
-
-### Get single order  🔒
-GET {{gateway}}/api/orders/1
-Authorization: Bearer {{login.response.body.$.token}}
-
 ### Cancel order  🔒
 POST {{gateway}}/api/orders/1/cancel
 Authorization: Bearer {{login.response.body.$.token}}
 
+### Mark order as Paid  🔒 Admin only
+POST {{gateway}}/api/orders/1/paid
+Authorization: Bearer {{login.response.body.$.token}}
 
-# ── Payments — protected ─────────────────────────────────────────────────────
+### Mark order as Shipped  🔒 Admin only
+POST {{gateway}}/api/orders/1/ship
+Authorization: Bearer {{login.response.body.$.token}}
 
-### Process payment  🔒
+### Mark order as Delivered  🔒 Admin only
+POST {{gateway}}/api/orders/1/deliver
+Authorization: Bearer {{login.response.body.$.token}}
+
+
+# ── Payments ─────────────────────────────────────────────────────────────────
+
+### Process payment via Gateway Orders Proxy  🔒
+POST {{gateway}}/api/orders/pay
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+  "orderId": 1,
+  "amount": 99.99,
+  "method": "CreditCard",
+  "simulateFailure": false
+}
+
+### Process direct Payment  🔒
 POST {{gateway}}/api/payments/pay
 Authorization: Bearer {{login.response.body.$.token}}
 Content-Type: application/json
@@ -122,7 +215,7 @@ Content-Type: application/json
 }
 
 
-# ── Health checks ─────────────────────────────────────────────────────────────
+# ── Health checks ────────────────────────────────────────────────────────────
 
 ### Gateway
 GET {{gateway}}/health
