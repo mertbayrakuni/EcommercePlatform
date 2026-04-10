@@ -4,6 +4,7 @@ using PaymentService.Data;
 using PaymentService.Services;
 using Scalar.AspNetCore;
 using Serilog;
+using System.Text.Json.Nodes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,16 @@ builder.Services.AddOpenApi(options =>
         {
             new OpenApiTag { Name = "Payments", Description = "Payment processing & transaction history" }
         };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, ct) =>
+    {
+        var path = context.Description.RelativePath ?? "";
+        if (path.Contains("payments/pay", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var payBody) == true)
+        {
+            payBody.Example = JsonNode.Parse("""{"orderId":1,"amount":179.97,"method":"CreditCard","simulateFailure":false}""");
+        }
         return Task.CompletedTask;
     });
 });

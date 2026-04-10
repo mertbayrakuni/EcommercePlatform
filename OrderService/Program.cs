@@ -8,6 +8,7 @@ using OrderService.Services;
 using Polly;
 using Polly.Extensions.Http;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,18 @@ builder.Services.AddOpenApi(options =>
         {
             new OpenApiTag { Name = "Orders", Description = "Order placement, status tracking & cancellation" }
         };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, ct) =>
+    {
+        var path = context.Description.RelativePath ?? "";
+        var method = context.Description.HttpMethod ?? "";
+        if (path.Contains("orders", StringComparison.OrdinalIgnoreCase)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var createOrderBody) == true)
+        {
+            createOrderBody.Example = JsonNode.Parse("""{"customerEmail":"customer@example.com","items":[{"productId":1,"quantity":2},{"productId":3,"quantity":1}]}""");
+        }
         return Task.CompletedTask;
     });
 });

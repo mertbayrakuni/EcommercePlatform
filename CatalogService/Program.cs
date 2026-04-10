@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using Serilog;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +46,46 @@ builder.Services.AddOpenApi(options =>
             new OpenApiTag { Name = "Categories", Description = "Category hierarchy & slug management" },
             new OpenApiTag { Name = "Inventory", Description = "Stock levels & reservation" }
         };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, ct) =>
+    {
+        var path = context.Description.RelativePath ?? "";
+        var method = context.Description.HttpMethod ?? "";
+        if (path.Contains("products", StringComparison.OrdinalIgnoreCase)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var createProductBody) == true)
+        {
+            createProductBody.Example = JsonNode.Parse("""{"name":"Running Shoes","price":89.99,"stock":50,"description":"Lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","categoryId":1}""");
+        }
+        if (path.Contains("products", StringComparison.OrdinalIgnoreCase)
+            && method.Equals("PUT", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var updateProductBody) == true)
+        {
+            updateProductBody.Example = JsonNode.Parse("""{"name":"Running Shoes Pro","price":99.99,"stock":45,"description":"Updated lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","isActive":true,"categoryId":1}""");
+        }
+        if (path.Contains("categories", StringComparison.OrdinalIgnoreCase)
+            && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var createCatBody) == true)
+        {
+            createCatBody.Example = JsonNode.Parse("""{"name":"Footwear","slug":"footwear"}""");
+        }
+        if (path.Contains("categories", StringComparison.OrdinalIgnoreCase)
+            && method.Equals("PUT", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var updateCatBody) == true)
+        {
+            updateCatBody.Example = JsonNode.Parse("""{"name":"Footwear & Shoes","slug":"footwear-shoes","isActive":true}""");
+        }
+        if (path.Contains("inventory/decrease", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var decreaseBody) == true)
+        {
+            decreaseBody.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
+        }
+        if (path.Contains("inventory/increase", StringComparison.OrdinalIgnoreCase)
+            && operation.RequestBody?.Content.TryGetValue("application/json", out var increaseBody) == true)
+        {
+            increaseBody.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
+        }
         return Task.CompletedTask;
     });
 });
