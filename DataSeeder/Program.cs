@@ -36,7 +36,7 @@ namespace DataSeeder
                 adminCmd.Parameters.AddWithValue("e", "ipek@bambicim.com");
                 adminCmd.Parameters.AddWithValue("pw", adminPassword);
                 adminCmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                var adminId = (int)(await adminCmd.ExecuteScalarAsync());
+                var adminId = (int)(await adminCmd.ExecuteScalarAsync() ?? 0);
                 users.Add((adminId, "ipek@bambicim.com"));
                 
                 for (int i = 0; i < 100; i++)
@@ -50,7 +50,7 @@ namespace DataSeeder
                     cmd.Parameters.AddWithValue("e", email);
                     cmd.Parameters.AddWithValue("pw", defaultPassword);
                     cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    var id = (int)(await cmd.ExecuteScalarAsync());
+                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
                     users.Add((id, email));
                 }
                 Console.WriteLine($"Seeded {users.Count} users into userdb.");
@@ -72,7 +72,7 @@ namespace DataSeeder
                     await using var cmd = new NpgsqlCommand(sql, conn);
                     cmd.Parameters.AddWithValue("n", name);
                     cmd.Parameters.AddWithValue("s", slug);
-                    var id = (int)(await cmd.ExecuteScalarAsync());
+                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
                     categories.Add(id);
                 }
 
@@ -95,7 +95,7 @@ namespace DataSeeder
                     cmd.Parameters.AddWithValue("cid", catId);
                     cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
                     
-                    var id = (int)(await cmd.ExecuteScalarAsync());
+                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
                     products.Add((id, price, sku, name));
                 }
                 Console.WriteLine($"Seeded {categories.Count} categories and {products.Count} products into catalogdb.");
@@ -121,7 +121,7 @@ namespace DataSeeder
                     cmdOrder.Parameters.AddWithValue("c", user.Email);
                     cmdOrder.Parameters.AddWithValue("t", amount);
                     cmdOrder.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    var orderId = (int)(await cmdOrder.ExecuteScalarAsync());
+                    var orderId = (int)(await cmdOrder.ExecuteScalarAsync() ?? 0);
                     orders.Add((orderId, amount));
 
                     var sqlItem = @"INSERT INTO ""OrderItems"" (""OrderId"", ""ProductId"", ""ProductName"", ""ProductSku"", ""UnitPrice"", ""Quantity"", ""LineTotal"")
