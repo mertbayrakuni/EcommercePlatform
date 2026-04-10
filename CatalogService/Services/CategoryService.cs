@@ -48,7 +48,7 @@ public sealed class CategoryService : ICategoryService
         dto.Slug = dto.Slug.Trim().ToLowerInvariant();
 
         var slugExists = await _db.Categories
-            .AnyAsync(c => c.Slug == dto.Slug);
+            .AnyAsync(c => c.Slug == dto.Slug && c.IsActive);
 
         if (slugExists)
             return ServiceResult<CategoryResponseDto>.Conflict("Slug already exists.");
@@ -67,11 +67,11 @@ public sealed class CategoryService : ICategoryService
         dto.Slug = dto.Slug.Trim().ToLowerInvariant();
 
         var entity = await _db.Categories.FirstOrDefaultAsync(c => c.Id == id);
-        if (entity is null)
+        if (entity is null || !entity.IsActive)
             return ServiceResult<CategoryResponseDto>.NotFound("Category not found.");
 
         var slugExists = await _db.Categories.AnyAsync(c =>
-            c.Id != id && c.Slug == dto.Slug);
+            c.Id != id && c.Slug == dto.Slug && c.IsActive);
 
         if (slugExists)
             return ServiceResult<CategoryResponseDto>.Conflict("Slug already exists.");

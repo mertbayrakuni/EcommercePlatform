@@ -11,5 +11,5 @@ public interface IPaymentProcessor
     /// Processes the payment request. Idempotent — a second call for the same
     /// order that already succeeded returns the existing transaction immediately.
     /// </summary>
-    Task<PaymentResultDto> ProcessAsync(PaymentRequestDto req);
+    Task<PaymentResultDto> ProcessAsync(PaymentRequestDto req, CancellationToken ct = default);
 }

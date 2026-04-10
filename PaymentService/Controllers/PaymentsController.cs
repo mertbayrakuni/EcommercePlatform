@@ -12,10 +12,10 @@ public sealed class PaymentsController : ControllerBase
     public PaymentsController(IPaymentProcessor proc) => _proc = proc;
 
     [HttpPost("pay")]
-    public async Task<ActionResult<PaymentResultDto>> Pay([FromBody] PaymentRequestDto req)
+    public async Task<ActionResult<PaymentResultDto>> Pay([FromBody] PaymentRequestDto req, CancellationToken ct)
     {
         if (req is null) return BadRequest();
-        var res = await _proc.ProcessAsync(req);
+        var res = await _proc.ProcessAsync(req, ct);
         if (!res.Succeeded) return BadRequest(new { error = res.ErrorMessage });
         return Ok(res);
     }

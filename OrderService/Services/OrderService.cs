@@ -186,7 +186,7 @@ public sealed class OrderService : IOrderService
 
         var order = new Order
         {
-            CustomerEmail = req.CustomerEmail.Trim(),
+            CustomerEmail = req.CustomerEmail.Trim().ToLowerInvariant(),
             Status = OrderStatus.Pending,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -292,7 +292,7 @@ public sealed class OrderService : IOrderService
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(email))
-            q = q.Where(o => o.CustomerEmail == email.Trim());
+            q = q.Where(o => o.CustomerEmail == email.Trim().ToLowerInvariant());
 
         var totalCount = await q.CountAsync(ct);
 

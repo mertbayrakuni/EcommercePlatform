@@ -15,11 +15,9 @@ public sealed class PaymentProcessor : IPaymentProcessor
 
     public PaymentProcessor(PaymentDbContext db) => _db = db;
 
-    public async Task<PaymentResultDto> ProcessAsync(PaymentRequestDto req)
+    public async Task<PaymentResultDto> ProcessAsync(PaymentRequestDto req, CancellationToken ct = default)
     {
-        // Idempotency — only deduplicate successful payments to prevent double-charging.
-        // Failed payments are retryable: a previous failure should not block a future attempt.
-        var existing = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == req.OrderId && p.Succeeded);
+        var existing = await _db.Payments.FirstOrDefaultAsync(p => p.OrderId == req.OrderId && p.Succeeded, ct);
         if (existing is not null)
             return new PaymentResultDto
             {
@@ -42,7 +40,7 @@ public sealed class PaymentProcessor : IPaymentProcessor
             ProcessedAt = DateTime.UtcNow
         });
 
-        await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync(ct);
 
         return result;
     }
