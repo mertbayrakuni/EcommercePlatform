@@ -12,7 +12,7 @@ namespace DataSeeder
         {
             Console.WriteLine("Starting data seeding...");
             var defaultPassword = BCrypt.Net.BCrypt.HashPassword("Password123!");
-            var adminPassword = BCrypt.Net.BCrypt.HashPassword("Test1234!");
+            var adminPassword = BCrypt.Net.BCrypt.HashPassword("admin1234!");
 
             var users = new List<(int Id, string Email)>();
             var categories = new List<int>();
