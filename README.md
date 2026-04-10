@@ -40,6 +40,7 @@ Infrastructure
 | **CatalogService** | 5098 | `catalogdb` | Products, categories, inventory, RabbitMQ consumer |
 | **OrderService** | 5099 | `orderdb` | Order creation, state machine, payment orchestration, RabbitMQ publisher |
 | **PaymentService** | 5100 | `paymentdb` | Stripe PaymentIntents (real charges in test mode) with simulation fallback, idempotency guard |
+| **DataSeeder** | — | All DBs | Console app that seeds the databases with categories, products, users, orders, and payment records |
 
 ---
 
@@ -183,6 +184,18 @@ The consumer reconnects with exponential back-off and nacks poison messages with
 
 ---
 
+## Running the Project
+
+Open `ECommercePlatform.slnx` in Visual Studio 2026+. Using the included `ECommercePlatform.slnLaunch.user` profile configures the environment to **start all microservices simultaneously** and open separate terminals for each API, running on consistent ports (5000, 5101, 5098, 5099, 5100).
+
+To start with a fully populated test environment:
+1. Ensure Docker is running and run `docker-compose up -d postgres rabbitmq` to spin up infrastructure.
+2. Run the `DataSeeder` console application. This will safely truncate the tables and populate `userdb`, `catalogdb`, `orderdb`, and `paymentdb` with randomized Bogus data, products, orders, structured simulated Stripe outcomes, and an **Admin account**:
+    - **Email**: `ipek@bambicim.com`
+    - **Password**: `Admin1234!`
+
+---
+
 ## Testing with the .http File
 
 Open `ApiGateway/ApiGateway.http` in Visual Studio. Click **▶ Send Request** above any `###` line.
@@ -227,11 +240,11 @@ ECommercePlatform/
 ├── CatalogService/        # Products, categories, inventory
 ├── OrderService/          # Orders, state machine, payment orchestration
 ├── PaymentService/        # Payment simulation
-├── UserService.Tests/
-├── OrderService.Tests/
-├── PaymentService.Tests/
-├── CatalogService.Tests/
+├── DataSeeder/            # Bogus, EF-independent Npgsql seeder project
+├── ...Tests/              # Respective xUnit test suites for the microservices
 ├── docker-compose.yml
+├── ECommercePlatform.slnx       # Main Solution file
+├── ECommercePlatform.slnLaunch.user # 5x multi-terminal integrated VS Setup
 └── db-init/               # Optional Postgres init scripts
 ```
 
