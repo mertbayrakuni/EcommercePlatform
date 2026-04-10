@@ -146,14 +146,29 @@ namespace DataSeeder
 
                 var faker = new Faker("en");
                 
+                var methods = new[] { "pm_card_visa", "pm_card_chargeDeclined", "pm_card_chargeDeclinedInsufficientFunds", "pm_card_authenticationRequired" };
+                
                 foreach (var order in orders)
                 {
-                    var sql = @"INSERT INTO ""Payments"" (""OrderId"", ""TransactionId"", ""Amount"", ""Method"", ""Succeeded"", ""ProcessedAt"")
-                                VALUES (@o, @t, @a, 'Card', true, @dt);";
+                    var sql = @"INSERT INTO ""Payments"" (""OrderId"", ""TransactionId"", ""Amount"", ""Method"", ""Succeeded"", ""ErrorMessage"", ""ProcessedAt"")
+                                VALUES (@o, @t, @a, @m, @s, @err, @dt);";
+                                
+                    var method = faker.PickRandom(methods);
+                    var succeeded = method == "pm_card_visa";
+                    var errorMsg = succeeded ? null : $"Mock decline for {method}";
+                                
                     await using var cmd = new NpgsqlCommand(sql, conn);
                     cmd.Parameters.AddWithValue("o", order.Id);
                     cmd.Parameters.AddWithValue("t", "tx_" + faker.Random.AlphaNumeric(10));
                     cmd.Parameters.AddWithValue("a", order.TotalAmount);
+                    cmd.Parameters.AddWithValue("m", method);
+                    cmd.Parameters.AddWithValue("s", succeeded);
+                    
+                    if (errorMsg == null)
+                        cmd.Parameters.AddWithValue("err", DBNull.Value);
+                    else
+                        cmd.Parameters.AddWithValue("err", errorMsg);
+                        
                     cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
                     await cmd.ExecuteNonQueryAsync();
                 }
