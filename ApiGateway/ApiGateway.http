@@ -1,3 +1,5 @@
+File: ApiGateway\ApiGateway.http
+````````
 @gateway = http://localhost:5000
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,7 +188,9 @@ Content-Type: application/json
 {
   "orderId": 1,
   "amount": 99.99,
+  "currency": "usd",
   "method": "CreditCard",
+  "paymentMethodId": "pm_card_visa",
   "simulateFailure": false
 }
 
@@ -198,7 +202,9 @@ Content-Type: application/json
 {
   "orderId": 1,
   "amount": 99.99,
+  "currency": "usd",
   "method": "CreditCard",
+  "paymentMethodId": "pm_card_visa",
   "simulateFailure": false
 }
 
@@ -210,7 +216,9 @@ Content-Type: application/json
 {
   "orderId": 99,
   "amount": 9.99,
+  "currency": "usd",
   "method": "CreditCard",
+  "paymentMethodId": "pm_card_chargeCustomerFail",
   "simulateFailure": true
 }
 
