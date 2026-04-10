@@ -65,6 +65,7 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PaymentDb: Host=postgres;Port=5432;Database=paymentdb;Username=postgres;Password=postgres
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
     ports:
       - "5100:8080"
     healthcheck:

@@ -4,6 +4,7 @@ using PaymentService.Data;
 using PaymentService.Services;
 using Scalar.AspNetCore;
 using Serilog;
+using Stripe;
 using System.Text.Json.Nodes;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,7 +45,7 @@ builder.Services.AddOpenApi(options =>
         if (path.Contains("payments/pay", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var payBody) == true)
         {
-            payBody.Example = JsonNode.Parse("""{"orderId":1,"amount":179.97,"method":"CreditCard","simulateFailure":false}""");
+            payBody.Example = JsonNode.Parse("""{"orderId":1,"amount":179.97,"currency":"usd","paymentMethodId":"pm_card_visa","simulateFailure":false}""");
         }
         return Task.CompletedTask;
     });
@@ -52,6 +53,10 @@ builder.Services.AddOpenApi(options =>
 
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PaymentDb")));
+
+var stripeKey = builder.Configuration["Stripe:SecretKey"];
+if (!string.IsNullOrWhiteSpace(stripeKey))
+    builder.Services.AddSingleton<IStripeClient>(new StripeClient(stripeKey));
 
 builder.Services.AddScoped<IPaymentProcessor, PaymentProcessor>();
 

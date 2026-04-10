@@ -60,7 +60,9 @@ public sealed class OrderService : IOrderService
         {
             OrderId = req.OrderId,
             Amount = req.Amount,
+            Currency = req.Currency,
             Method = req.Method,
+            PaymentMethodId = req.PaymentMethodId,
             SimulateFailure = req.SimulateFailure
         };
 
