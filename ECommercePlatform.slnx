@@ -11,6 +11,7 @@
   <Project Path="ApiGateway/ApiGateway.csproj" />
   <Project Path="CatalogService.Tests/CatalogService.Tests.csproj" />
   <Project Path="CatalogService/CatalogService.csproj" />
+  <Project Path="DataSeeder/DataSeeder.csproj" />
   <Project Path="OrderService.Tests/OrderService.Tests.csproj" />
   <Project Path="OrderService/OrderService.csproj" />
   <Project Path="PaymentService.Tests/PaymentService.Tests.csproj" />
