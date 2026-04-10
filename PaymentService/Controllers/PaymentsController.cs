@@ -16,7 +16,7 @@ public sealed class PaymentsController : ControllerBase
     {
         if (req is null) return BadRequest();
         var res = await _proc.ProcessAsync(req, ct);
-        if (!res.Succeeded) return BadRequest(new { error = res.ErrorMessage });
+        if (!res.Succeeded) return UnprocessableEntity(new { error = res.ErrorMessage });
         return Ok(res);
     }
 }

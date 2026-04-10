@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using OrderService.Common;
 using OrderService.Data;
 using OrderService.Infrastructure;
 using OrderService.Models;
@@ -71,7 +72,7 @@ public class OrderServiceTests : IDisposable
     [Fact]
     public async Task CancelAsync_OrderNotFound_Throws()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.CancelAsync(999));
+        await Assert.ThrowsAsync<NotFoundException>(() => _sut.CancelAsync(999));
     }
 
     [Fact]
@@ -185,7 +186,7 @@ public class OrderServiceTests : IDisposable
     [Fact]
     public async Task PayAsync_OrderNotFound_Throws()
     {
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+        var ex = await Assert.ThrowsAsync<NotFoundException>(
             () => _sut.PayAsync(new Dtos.PaymentRequestDto { OrderId = 999, Amount = 50m }));
 
         Assert.Contains("not found", ex.Message, StringComparison.OrdinalIgnoreCase);

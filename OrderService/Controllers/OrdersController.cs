@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OrderService.Common;
 using OrderService.Dtos;
 using OrderService.Services;
@@ -7,6 +8,7 @@ namespace OrderService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public sealed class OrdersController : ControllerBase
 {
     private readonly IOrderService _orders;
@@ -55,6 +57,10 @@ public sealed class OrdersController : ControllerBase
             var updated = await _orders.CancelAsync(id, ct);
             return Ok(updated);
         }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message });
@@ -62,12 +68,17 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:int}/paid")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<OrderResponseDto>> MarkPaid(int id, CancellationToken ct)
     {
         try
         {
             var updated = await _orders.MarkPaidAsync(id, ct);
             return Ok(updated);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -76,12 +87,17 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:int}/ship")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<OrderResponseDto>> MarkShipped(int id, CancellationToken ct)
     {
         try
         {
             var updated = await _orders.MarkShippedAsync(id, ct);
             return Ok(updated);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -90,12 +106,17 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpPost("{id:int}/deliver")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<OrderResponseDto>> MarkDelivered(int id, CancellationToken ct)
     {
         try
         {
             var updated = await _orders.MarkDeliveredAsync(id, ct);
             return Ok(updated);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {
@@ -112,6 +133,10 @@ public sealed class OrdersController : ControllerBase
         {
             var resp = await _orders.PayAsync(req, ct);
             return Ok(resp);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new { error = ex.Message });
         }
         catch (InvalidOperationException ex)
         {

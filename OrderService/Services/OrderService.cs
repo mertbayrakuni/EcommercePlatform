@@ -45,7 +45,7 @@ public sealed class OrderService : IOrderService
             .FirstOrDefaultAsync(o => o.Id == req.OrderId, ct);
 
         if (order is null)
-            throw new InvalidOperationException("Order not found.");
+            throw new NotFoundException("Order not found.");
 
         if (!OrderStateMachine.CanTransition(order.Status, OrderStatus.Paid))
             throw new InvalidOperationException($"Cannot pay an order in status '{order.Status}'. Allowed: {OrderStateMachine.AllowedTargetsText(order.Status)}");
@@ -100,7 +100,7 @@ public sealed class OrderService : IOrderService
                 .FirstOrDefaultAsync(o => o.Id == id, ct);
 
             if (order is null)
-                throw new InvalidOperationException("Order not found.");
+                throw new NotFoundException("Order not found.");
 
             if (!OrderStateMachine.CanTransition(order.Status, to))
                 throw new InvalidOperationException($"Cannot transition from '{order.Status}' to '{to}'. Allowed: {OrderStateMachine.AllowedTargetsText(order.Status)}");
@@ -109,12 +109,7 @@ public sealed class OrderService : IOrderService
             order.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
 
-            var updated = await _db.Orders
-                .AsNoTracking()
-                .Include(o => o.Items)
-                .FirstAsync(o => o.Id == order.Id, ct);
-
-            return updated.ToDto();
+            return order.ToDto();
         }
 
     public async Task<OrderResponseDto> MarkPaidAsync(int id, CancellationToken ct = default)
@@ -139,7 +134,7 @@ public sealed class OrderService : IOrderService
             .FirstOrDefaultAsync(o => o.Id == id, ct);
 
         if (order is null)
-            throw new InvalidOperationException("Order not found.");
+            throw new NotFoundException("Order not found.");
 
         if (order.Status == OrderStatus.Cancelled)
             return order.ToDto(); // idempotent
@@ -165,12 +160,7 @@ public sealed class OrderService : IOrderService
         }
         catch (Exception ex) { _logger.LogError(ex, "Failed to publish order.cancelled event for order {OrderId}", order.Id); }
 
-        var updated = await _db.Orders
-            .AsNoTracking()
-            .Include(o => o.Items)
-            .FirstAsync(o => o.Id == order.Id, ct);
-
-        return updated.ToDto();
+        return order.ToDto();
     }
 
     public async Task<OrderResponseDto> CreateAsync(CreateOrderRequestDto req, CancellationToken ct = default)

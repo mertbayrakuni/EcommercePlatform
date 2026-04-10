@@ -21,7 +21,7 @@ public sealed class AuthController : ControllerBase
         try
         {
             var result = await _auth.RegisterAsync(dto, ct);
-            return Ok(result);
+            return Created(string.Empty, result);
         }
         catch (InvalidOperationException ex)
         {

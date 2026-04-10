@@ -43,6 +43,9 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Pass: guest
+      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Issuer: ECommercePlatform
+      Jwt__Audience: ECommercePlatform
     ports:
       - "5098:8080"
     healthcheck:
@@ -66,6 +69,9 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PaymentDb: Host=postgres;Port=5432;Database=paymentdb;Username=postgres;Password=postgres
       Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Issuer: ECommercePlatform
+      Jwt__Audience: ECommercePlatform
     ports:
       - "5100:8080"
     healthcheck:
@@ -91,6 +97,9 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Pass: guest
+      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Issuer: ECommercePlatform
+      Jwt__Audience: ECommercePlatform
     ports:
       - "5099:8080"
     depends_on:

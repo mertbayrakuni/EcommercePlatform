@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using OrderService.Data;
 using OrderService.Infrastructure;
@@ -8,6 +10,7 @@ using OrderService.Services;
 using Polly;
 using Polly.Extensions.Http;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json.Nodes;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -98,6 +101,23 @@ builder.Services.AddHttpClient("Payment", client =>
 
 builder.Services.AddScoped<IOrderService, OrderService.Services.OrderService>();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var secret = builder.Configuration["Jwt:Secret"]!;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+        };
+    });
+builder.Services.AddAuthorization();
+
 // RabbitMQ: register a lightweight publisher helper
 builder.Services.AddSingleton<IRabbitPublisher, RabbitPublisher>(sp =>
 {
@@ -133,6 +153,9 @@ app.MapScalarApiReference(options =>
 });
 
 app.MapHealthChecks("/health");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/", () => "OrderService is running ✅");

@@ -75,7 +75,7 @@ public sealed class AuthService : IAuthService
 
     private AuthResponseDto BuildResponse(User user)
     {
-        var expiryHours = double.TryParse(_config["Jwt:ExpiryHours"], out var h) ? h : 24;
+        var expiryHours = _config.GetValue<double>("Jwt:ExpiryHours", 24);
         var expiresAt = DateTime.UtcNow.AddHours(expiryHours);
 
         return new AuthResponseDto

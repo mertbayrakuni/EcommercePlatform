@@ -1,13 +1,14 @@
 ﻿using CatalogService.Common;
 using CatalogService.Dtos;
 using CatalogService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CatalogService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController : ControllerBase
+public sealed class ProductsController : ControllerBase
 {
     private readonly IProductService _service;
     public ProductsController(IProductService service) => _service = service;
@@ -53,6 +54,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductResponseDto>> Create([FromBody] ProductCreateDto dto)
     {
         var result = await _service.CreateAsync(dto);
@@ -76,6 +78,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<ProductResponseDto>> Update(
         [FromRoute] int id,
         [FromBody] ProductUpdateDto dto)
@@ -101,6 +104,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var result = await _service.SoftDeleteAsync(id);

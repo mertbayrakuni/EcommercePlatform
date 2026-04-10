@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using PaymentService.Data;
 using PaymentService.Services;
 using Scalar.AspNetCore;
 using Serilog;
 using Stripe;
+using System.Text;
 using System.Text.Json.Nodes;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +63,23 @@ if (!string.IsNullOrWhiteSpace(stripeKey))
 
 builder.Services.AddScoped<IPaymentProcessor, PaymentProcessor>();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var secret = builder.Configuration["Jwt:Secret"]!;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret))
+        };
+    });
+builder.Services.AddAuthorization();
+
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<PaymentDbContext>();
 
@@ -84,6 +104,8 @@ app.MapScalarApiReference(options =>
 });
 
 app.MapControllers();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapGet("/", () => "PaymentService is running ✅");
 app.Run();

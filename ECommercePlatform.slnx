@@ -1,7 +1,12 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path=".env" />
+    <File Path=".env.example" />
+    <File Path=".github\copilot-instructions.md" />
+    <File Path=".gitignore" />
     <File Path="docker-compose.yml" />
     <File Path="OrderPlatform.postman_collection.json" />
+    <File Path="README.md" />
   </Folder>
   <Project Path="ApiGateway/ApiGateway.csproj" />
   <Project Path="CatalogService.Tests/CatalogService.Tests.csproj" />
@@ -13,3 +18,4 @@
   <Project Path="UserService.Tests/UserService.Tests.csproj" />
   <Project Path="UserService/UserService.csproj" />
 </Solution>
+

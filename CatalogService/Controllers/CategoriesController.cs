@@ -1,13 +1,14 @@
 ﻿using CatalogService.Common;
 using CatalogService.Dtos;
 using CatalogService.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CatalogService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CategoriesController : ControllerBase
+public sealed class CategoriesController : ControllerBase
 {
     private readonly ICategoryService _service;
 
@@ -37,6 +38,7 @@ public class CategoriesController : ControllerBase
 
     // POST /api/Categories
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CategoryResponseDto>> Create([FromBody] CategoryCreateDto dto)
     {
         var result = await _service.CreateAsync(dto);
@@ -62,6 +64,7 @@ public class CategoriesController : ControllerBase
 
     // PUT /api/Categories/{id}
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<CategoryResponseDto>> Update(
         [FromRoute] int id,
         [FromBody] CategoryUpdateDto dto)
@@ -88,6 +91,7 @@ public class CategoriesController : ControllerBase
 
     // DELETE /api/Categories/{id} (soft delete)
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete([FromRoute] int id)
     {
         var result = await _service.SoftDeleteAsync(id);
