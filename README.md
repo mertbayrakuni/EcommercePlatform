@@ -8,25 +8,38 @@ A microservices-based e-commerce backend built with **.NET 10** and **C# 14**, c
 
 ## Architecture
 
-```
-Browser / Client
-       │
-       ▼
-┌─────────────────┐
-│   API Gateway   │  :5000  — YARP reverse proxy + JWT validation
-└────────┬────────┘
-         │  routes /api/*
-    ┌────┴──────────────────────────────────┐
-    │                │            │         │
-    ▼                ▼            ▼         ▼
-UserService     CatalogService  OrderService  PaymentService
-  :5101           :5098           :5099        :5100
+```mermaid
+flowchart TD
+    Client(["Browser / Client"])
+    GW["API Gateway :5000\nYARP · JWT middleware"]
 
-CatalogService ◄── order.cancelled (RabbitMQ) ── OrderService
+    US["UserService :5101"]
+    CS["CatalogService :5098"]
+    OS["OrderService :5099"]
+    PS["PaymentService :5100"]
 
-Infrastructure
-  PostgreSQL :5432   — each service owns its own database
-  RabbitMQ   :5672   — async domain events (management UI :15672)
+    USDB[("userdb")]
+    CSDB[("catalogdb")]
+    OSDB[("orderdb")]
+    PSDB[("paymentdb")]
+
+    RMQ(["RabbitMQ :5672"])
+
+    Client --> GW
+    GW -->|"/api/auth/**  public"| US
+    GW -->|"/api/products/** /api/categories/**"| CS
+    GW -->|"/api/inventory/**  JWT"| CS
+    GW -->|"/api/orders/**  JWT"| OS
+    GW -->|"/api/payments/**  JWT"| PS
+
+    OS -.->|"HTTP: process payment"| PS
+    OS -->|"order.created / order.paid / order.cancelled"| RMQ
+    RMQ -->|"order.cancelled  restore stock"| CS
+
+    US --- USDB
+    CS --- CSDB
+    OS --- OSDB
+    PS --- PSDB
 ```
 
 ---

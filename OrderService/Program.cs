@@ -37,7 +37,7 @@ builder.Services.AddOpenApi(options =>
         };
         doc.Servers =
         [
-            new OpenApiServer { Url = "http://localhost:5099", Description = "Local development" },
+            new OpenApiServer { Url = "http://localhost:5011", Description = "Local development" },
             new OpenApiServer { Url = "http://orderservice:8080", Description = "Docker" }
         ];
         doc.Tags = new HashSet<OpenApiTag>
@@ -54,7 +54,7 @@ builder.Services.AddOpenApi(options =>
             && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var createOrderBody) == true)
         {
-            createOrderBody.Example = JsonNode.Parse("""{"customerEmail":"customer@example.com","items":[{"productId":1,"quantity":2},{"productId":3,"quantity":1}]}""");
+            createOrderBody!.Example = JsonNode.Parse("""{"customerEmail":"customer@example.com","items":[{"productId":1,"quantity":2},{"productId":3,"quantity":1}]}""");
         }
         return Task.CompletedTask;
     });
@@ -146,10 +146,10 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("OrderService API")
         .WithTheme(ScalarTheme.DeepSpace)
-        .WithDefaultFonts(false)
+        .DisableDefaultFonts()
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-        .WithPreferredScheme("Bearer")
-        .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
+        .AddPreferredSecuritySchemes("Bearer")
+        .AddHttpAuthentication("Bearer", scheme => scheme.Token = app.Configuration["Scalar:BearerToken"] ?? "");
 });
 
 app.MapHealthChecks("/health");

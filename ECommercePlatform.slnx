@@ -8,6 +8,7 @@
     <File Path="OrderPlatform.postman_collection.json" />
     <File Path="README.md" />
   </Folder>
+  <Project Path="ApiGateway.Tests/ApiGateway.Tests.csproj" />
   <Project Path="ApiGateway/ApiGateway.csproj" />
   <Project Path="CatalogService.Tests/CatalogService.Tests.csproj" />
   <Project Path="CatalogService/CatalogService.csproj" />

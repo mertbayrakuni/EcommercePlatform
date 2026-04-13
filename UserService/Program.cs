@@ -32,7 +32,7 @@ builder.Services.AddOpenApi(options =>
         };
         doc.Servers =
         [
-            new OpenApiServer { Url = "http://localhost:5101", Description = "Local development" },
+            new OpenApiServer { Url = "http://localhost:5201", Description = "Local development" },
             new OpenApiServer { Url = "http://userservice:8080", Description = "Docker" }
         ];
         doc.Tags = new HashSet<OpenApiTag>
@@ -47,12 +47,12 @@ builder.Services.AddOpenApi(options =>
         if (path.Contains("login", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var loginBody) == true)
         {
-            loginBody.Example = JsonNode.Parse("""{"email":"admin@example.com","password":"Password123"}""");
+            loginBody!.Example = JsonNode.Parse("""{"email":"admin@example.com","password":"Password123"}""");
         }
         if (path.Contains("register", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var regBody) == true)
         {
-            regBody.Example = JsonNode.Parse("""{"email":"user@example.com","password":"Password123","firstName":"Demo","lastName":"User"}""");
+            regBody!.Example = JsonNode.Parse("""{"email":"user@example.com","password":"Password123","firstName":"Demo","lastName":"User"}""");
         }
         return Task.CompletedTask;
     });
@@ -98,10 +98,10 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("UserService API")
         .WithTheme(ScalarTheme.DeepSpace)
-        .WithDefaultFonts(false)
+        .DisableDefaultFonts()
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-        .WithPreferredScheme("Bearer")
-        .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
+        .AddPreferredSecuritySchemes("Bearer")
+        .AddHttpAuthentication("Bearer", scheme => scheme.Token = app.Configuration["Scalar:BearerToken"] ?? "");
 });
 
 app.UseAuthentication();

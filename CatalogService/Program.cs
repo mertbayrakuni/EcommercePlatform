@@ -59,35 +59,35 @@ builder.Services.AddOpenApi(options =>
             && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var createProductBody) == true)
         {
-            createProductBody.Example = JsonNode.Parse("""{"name":"Running Shoes","price":89.99,"stock":50,"description":"Lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","categoryId":1}""");
+            createProductBody!.Example = JsonNode.Parse("""{"name":"Running Shoes","price":89.99,"stock":50,"description":"Lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","categoryId":1}""");
         }
         if (path.Contains("products", StringComparison.OrdinalIgnoreCase)
             && method.Equals("PUT", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var updateProductBody) == true)
         {
-            updateProductBody.Example = JsonNode.Parse("""{"name":"Running Shoes Pro","price":99.99,"stock":45,"description":"Updated lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","isActive":true,"categoryId":1}""");
+            updateProductBody!.Example = JsonNode.Parse("""{"name":"Running Shoes Pro","price":99.99,"stock":45,"description":"Updated lightweight trail running shoes","sku":"SHOE-001","imageUrl":"https://example.com/shoes.jpg","isActive":true,"categoryId":1}""");
         }
         if (path.Contains("categories", StringComparison.OrdinalIgnoreCase)
             && method.Equals("POST", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var createCatBody) == true)
         {
-            createCatBody.Example = JsonNode.Parse("""{"name":"Footwear","slug":"footwear"}""");
+            createCatBody!.Example = JsonNode.Parse("""{"name":"Footwear","slug":"footwear"}""");
         }
         if (path.Contains("categories", StringComparison.OrdinalIgnoreCase)
             && method.Equals("PUT", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var updateCatBody) == true)
         {
-            updateCatBody.Example = JsonNode.Parse("""{"name":"Footwear & Shoes","slug":"footwear-shoes","isActive":true}""");
+            updateCatBody!.Example = JsonNode.Parse("""{"name":"Footwear & Shoes","slug":"footwear-shoes","isActive":true}""");
         }
         if (path.Contains("inventory/decrease", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var decreaseBody) == true)
         {
-            decreaseBody.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
+            decreaseBody!.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
         }
         if (path.Contains("inventory/increase", StringComparison.OrdinalIgnoreCase)
             && operation.RequestBody?.Content.TryGetValue("application/json", out var increaseBody) == true)
         {
-            increaseBody.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
+            increaseBody!.Example = JsonNode.Parse("""{"items":[{"productId":1,"quantity":2}]}""");
         }
         return Task.CompletedTask;
     });
@@ -136,10 +136,10 @@ app.MapScalarApiReference(options =>
     options
         .WithTitle("CatalogService API")
         .WithTheme(ScalarTheme.DeepSpace)
-        .WithDefaultFonts(false)
+        .DisableDefaultFonts()
         .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-        .WithPreferredScheme("Bearer")
-        .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
+        .AddPreferredSecuritySchemes("Bearer")
+        .AddHttpAuthentication("Bearer", scheme => scheme.Token = app.Configuration["Scalar:BearerToken"] ?? "");
 });
 
 // app.UseHttpsRedirection();
