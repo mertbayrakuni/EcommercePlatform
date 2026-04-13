@@ -1,185 +1,214 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using Bogus;
 using Npgsql;
-using Bogus;
 
-namespace DataSeeder
+var host = args.ElementAtOrDefault(0) ?? Environment.GetEnvironmentVariable("DB_HOST") ?? "127.0.0.1";
+var port = args.ElementAtOrDefault(1) ?? Environment.GetEnvironmentVariable("DB_PORT") ?? "5432";
+string Conn(string db) => $"Host={host};Port={port};Database={db};Username=postgres;Password=postgres";
+
+Console.WriteLine($"Seeding databases at {host}:{port}...\n");
+
+var adminPassword   = BCrypt.Net.BCrypt.HashPassword("Admin1234!");
+var defaultPassword = BCrypt.Net.BCrypt.HashPassword("Password123!");
+
+var customers  = new List<(int Id, string Email)>();
+var categories = new List<int>();
+var products   = new List<(int Id, decimal Price, string Sku, string Name)>();
+
+var payments = new List<PaymentSeed>();
+
+// ── 1. userdb ─────────────────────────────────────────────────────────────────
+Console.Write("  Users       ");
+await using (var conn = new NpgsqlConnection(Conn("userdb")))
 {
-    class Program
+    await conn.OpenAsync();
+    await Exec(conn, """TRUNCATE TABLE "Users" CASCADE;""");
+
+    var faker = new Faker("en");
+
+    // Admin — İpek, intentionally excluded from the customer order pool
+    await Insert(conn,
+        """INSERT INTO "Users" ("FirstName","LastName","Email","PasswordHash","Role","CreatedAt","UpdatedAt") VALUES (@f,@l,@e,@pw,'Admin',@dt,@dt) RETURNING "Id";""",
+        ("f", "İpek"), ("l", "Bayrak"), ("e", "ipek@bambicim.com"),
+        ("pw", adminPassword), ("dt", DateTime.UtcNow));
+
+    var usedEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "ipek@bambicim.com" };
+
+    for (var i = 0; i < 100; i++)
     {
-        static async Task Main(string[] args)
-        {
-            Console.WriteLine("Starting data seeding...");
-            var defaultPassword = BCrypt.Net.BCrypt.HashPassword("Password123!");
-            var adminPassword = BCrypt.Net.BCrypt.HashPassword("Admin1234!");
+        string email;
+        do { email = faker.Internet.Email().ToLower(); } while (!usedEmails.Add(email));
 
-            var users = new List<(int Id, string Email)>();
-            var categories = new List<int>();
-            var products = new List<(int Id, decimal Price, string Sku, string Name)>();
-            var orderData = new List<(int OrderId, decimal Amount, string Method, bool Succeeded, string? ErrorMsg)>();
+        var createdAt = DateTime.UtcNow.AddDays(-faker.Random.Int(0, 180));
+        var id = await Insert(conn,
+            """INSERT INTO "Users" ("FirstName","LastName","Email","PasswordHash","Role","CreatedAt","UpdatedAt") VALUES (@f,@l,@e,@pw,'Customer',@dt,@dt) RETURNING "Id";""",
+            ("f", faker.Name.FirstName()), ("l", faker.Name.LastName()),
+            ("e", email), ("pw", defaultPassword), ("dt", createdAt));
 
-            // 1. userdb - Users
-            await using (var conn = new NpgsqlConnection("Host=127.0.0.1;Port=5432;Database=userdb;Username=postgres;Password=postgres"))
-            {
-                await conn.OpenAsync();
-                await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Users\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
-
-                var faker = new Faker("en");
-                
-                // Add Admin Account
-                var adminSql = @"INSERT INTO ""Users"" (""FirstName"", ""LastName"", ""Email"", ""PasswordHash"", ""Role"", ""CreatedAt"", ""UpdatedAt"")
-                            VALUES (@f, @l, @e, @pw, 'Admin', @dt, @dt) RETURNING ""Id"";";
-                await using var adminCmd = new NpgsqlCommand(adminSql, conn);
-                adminCmd.Parameters.AddWithValue("f", "İpek");
-                adminCmd.Parameters.AddWithValue("l", "Bayrak");
-                adminCmd.Parameters.AddWithValue("e", "ipek@bambicim.com");
-                adminCmd.Parameters.AddWithValue("pw", adminPassword);
-                adminCmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                var adminId = (int)(await adminCmd.ExecuteScalarAsync() ?? 0);
-                users.Add((adminId, "ipek@bambicim.com"));
-                
-                for (int i = 0; i < 100; i++)
-                {
-                    var email = faker.Internet.Email().ToLower();
-                    var sql = @"INSERT INTO ""Users"" (""FirstName"", ""LastName"", ""Email"", ""PasswordHash"", ""Role"", ""CreatedAt"", ""UpdatedAt"")
-                                VALUES (@f, @l, @e, @pw, 'Customer', @dt, @dt) RETURNING ""Id"";";
-                    await using var cmd = new NpgsqlCommand(sql, conn);
-                    cmd.Parameters.AddWithValue("f", faker.Name.FirstName());
-                    cmd.Parameters.AddWithValue("l", faker.Name.LastName());
-                    cmd.Parameters.AddWithValue("e", email);
-                    cmd.Parameters.AddWithValue("pw", defaultPassword);
-                    cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
-                    users.Add((id, email));
-                }
-                Console.WriteLine($"Seeded {users.Count} users into userdb.");
-            }
-
-            // 2. catalogdb - Categories & Products
-            await using (var conn = new NpgsqlConnection("Host=127.0.0.1;Port=5432;Database=catalogdb;Username=postgres;Password=postgres"))
-            {
-                await conn.OpenAsync();
-                await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Categories\", \"Products\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
-
-                var faker = new Faker("en");
-                
-                for(int i = 0; i < 10; i++)
-                {
-                    var name = faker.Commerce.Categories(1)[0];
-                    var slug = name.ToLower().Replace(" ", "-") + "-" + i;
-                    var sql = @"INSERT INTO ""Categories"" (""Name"", ""Slug"", ""IsActive"") VALUES (@n, @s, true) RETURNING ""Id"";";
-                    await using var cmd = new NpgsqlCommand(sql, conn);
-                    cmd.Parameters.AddWithValue("n", name);
-                    cmd.Parameters.AddWithValue("s", slug);
-                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
-                    categories.Add(id);
-                }
-
-                for (int i = 0; i < 100; i++)
-                {
-                    var price = Math.Round(faker.Random.Decimal(10.0m, 500.0m), 2);
-                    var sku = faker.Commerce.Ean8();
-                    var name = faker.Commerce.ProductName();
-                    var catId = faker.PickRandom(categories);
-                    
-                    var sql = @"INSERT INTO ""Products"" (""Name"", ""Description"", ""Price"", ""Sku"", ""ImageUrl"", ""Stock"", ""IsActive"", ""CategoryId"", ""CreatedAt"", ""UpdatedAt"")
-                                VALUES (@n, @d, @p, @sku, @i, @s, true, @cid, @dt, @dt) RETURNING ""Id"";";
-                    await using var cmd = new NpgsqlCommand(sql, conn);
-                    cmd.Parameters.AddWithValue("n", name);
-                    cmd.Parameters.AddWithValue("d", faker.Commerce.ProductDescription());
-                    cmd.Parameters.AddWithValue("p", price);
-                    cmd.Parameters.AddWithValue("sku", sku);
-                    cmd.Parameters.AddWithValue("i", faker.Image.PicsumUrl());
-                    cmd.Parameters.AddWithValue("s", faker.Random.Int(10, 500));
-                    cmd.Parameters.AddWithValue("cid", catId);
-                    cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    
-                    var id = (int)(await cmd.ExecuteScalarAsync() ?? 0);
-                    products.Add((id, price, sku, name));
-                }
-                Console.WriteLine($"Seeded {categories.Count} categories and {products.Count} products into catalogdb.");
-            }
-
-            // 3. orderdb - Orders & OrderItems
-            await using (var conn = new NpgsqlConnection("Host=127.0.0.1;Port=5432;Database=orderdb;Username=postgres;Password=postgres"))
-            {
-                await conn.OpenAsync();
-                await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Orders\", \"OrderItems\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
-
-                var faker = new Faker("en");
-                var methods = new[] { "pm_card_visa", "pm_card_chargeDeclined", "pm_card_chargeDeclinedInsufficientFunds", "pm_card_authenticationRequired" };
-                var successStatuses = new[] { "Paid", "Shipped", "Delivered", "Completed" };
-                var failStatuses = new[] { "Pending", "Cancelled" };
-                
-                for (int i = 0; i < 100; i++)
-                {
-                    var user = faker.PickRandom(users);
-                    var prod = faker.PickRandom(products);
-                    var amount = prod.Price;
-                    
-                    var method = faker.PickRandom(methods);
-                    var succeeded = method == "pm_card_visa";
-                    var status = succeeded ? faker.PickRandom(successStatuses) : faker.PickRandom(failStatuses);
-                    var errorMsg = succeeded ? null : $"Mock decline for {method}";
-                    
-                    var sqlOrder = @"INSERT INTO ""Orders"" (""CustomerEmail"", ""TotalAmount"", ""Status"", ""CreatedAt"", ""UpdatedAt"")
-                                     VALUES (@c, @t, @st, @dt, @dt) RETURNING ""Id"";";
-                    await using var cmdOrder = new NpgsqlCommand(sqlOrder, conn);
-                    cmdOrder.Parameters.AddWithValue("c", user.Email);
-                    cmdOrder.Parameters.AddWithValue("t", amount);
-                    cmdOrder.Parameters.AddWithValue("st", status);
-                    cmdOrder.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    var orderId = (int)(await cmdOrder.ExecuteScalarAsync() ?? 0);
-                    
-                    orderData.Add((orderId, amount, method, succeeded, errorMsg));
-
-                    var sqlItem = @"INSERT INTO ""OrderItems"" (""OrderId"", ""ProductId"", ""ProductName"", ""ProductSku"", ""UnitPrice"", ""Quantity"", ""LineTotal"")
-                                    VALUES (@oid, @pid, @pn, @psku, @up, 1, @lt);";
-                    await using var cmdItem = new NpgsqlCommand(sqlItem, conn);
-                    cmdItem.Parameters.AddWithValue("oid", orderId);
-                    cmdItem.Parameters.AddWithValue("pid", prod.Id);
-                    cmdItem.Parameters.AddWithValue("pn", prod.Name);
-                    cmdItem.Parameters.AddWithValue("psku", prod.Sku);
-                    cmdItem.Parameters.AddWithValue("up", prod.Price);
-                    cmdItem.Parameters.AddWithValue("lt", prod.Price);
-                    await cmdItem.ExecuteNonQueryAsync();
-                }
-                Console.WriteLine($"Seeded {orderData.Count} orders with items into orderdb.");
-            }
-
-            // 4. paymentdb - Payments
-            await using (var conn = new NpgsqlConnection("Host=127.0.0.1;Port=5432;Database=paymentdb;Username=postgres;Password=postgres"))
-            {
-                await conn.OpenAsync();
-                await using (var cleanCmd = new NpgsqlCommand("TRUNCATE TABLE \"Payments\" CASCADE;", conn)) await cleanCmd.ExecuteNonQueryAsync();
-
-                var faker = new Faker("en");
-                
-                foreach (var data in orderData)
-                {
-                    var sql = @"INSERT INTO ""Payments"" (""OrderId"", ""TransactionId"", ""Amount"", ""Method"", ""Succeeded"", ""ErrorMessage"", ""ProcessedAt"")
-                                VALUES (@o, @t, @a, @m, @s, @err, @dt);";
-                                
-                    await using var cmd = new NpgsqlCommand(sql, conn);
-                    cmd.Parameters.AddWithValue("o", data.OrderId);
-                    cmd.Parameters.AddWithValue("t", "tx_" + faker.Random.AlphaNumeric(10));
-                    cmd.Parameters.AddWithValue("a", data.Amount);
-                    cmd.Parameters.AddWithValue("m", data.Method);
-                    cmd.Parameters.AddWithValue("s", data.Succeeded);
-                    
-                    if (data.ErrorMsg == null)
-                        cmd.Parameters.AddWithValue("err", DBNull.Value);
-                    else
-                        cmd.Parameters.AddWithValue("err", data.ErrorMsg);
-                        
-                    cmd.Parameters.AddWithValue("dt", DateTime.UtcNow);
-                    await cmd.ExecuteNonQueryAsync();
-                }
-                Console.WriteLine($"Seeded {orderData.Count} payments into paymentdb.");
-            }
-
-            Console.WriteLine("Successfully finished database seeding!");
-        }
+        customers.Add((id, email));
     }
 }
+Console.WriteLine($"1 admin + {customers.Count} customers ✓");
+
+// ── 2. catalogdb ──────────────────────────────────────────────────────────────
+Console.Write("  Catalog     ");
+await using (var conn = new NpgsqlConnection(Conn("catalogdb")))
+{
+    await conn.OpenAsync();
+    await Exec(conn, """TRUNCATE TABLE "Categories","Products" CASCADE;""");
+
+    var faker = new Faker("en");
+
+    string[] categoryNames =
+    [
+        "Electronics", "Clothing", "Books", "Home & Kitchen", "Sports & Outdoors",
+        "Toys & Games", "Beauty & Health", "Automotive", "Garden & Tools", "Pet Supplies"
+    ];
+
+    foreach (var name in categoryNames)
+    {
+        var slug = name.ToLower().Replace(" & ", "-and-").Replace(" ", "-");
+        var id = await Insert(conn,
+            """INSERT INTO "Categories" ("Name","Slug","IsActive") VALUES (@n,@s,true) RETURNING "Id";""",
+            ("n", name), ("s", slug));
+        categories.Add(id);
+    }
+
+    var usedSkus = new HashSet<string>();
+    for (var i = 0; i < 100; i++)
+    {
+        string sku;
+        do { sku = faker.Commerce.Ean8(); } while (!usedSkus.Add(sku));
+
+        var price     = Math.Round(faker.Random.Decimal(9.99m, 499.99m), 2);
+        var name      = faker.Commerce.ProductName();
+        var catId     = faker.PickRandom(categories);
+        var createdAt = DateTime.UtcNow.AddDays(-faker.Random.Int(0, 365));
+
+        var id = await Insert(conn,
+            """INSERT INTO "Products" ("Name","Description","Price","Sku","ImageUrl","Stock","IsActive","CategoryId","CreatedAt","UpdatedAt") VALUES (@n,@d,@p,@sku,@img,@s,true,@cid,@dt,@dt) RETURNING "Id";""",
+            ("n", name), ("d", faker.Commerce.ProductDescription()), ("p", price),
+            ("sku", sku), ("img", $"https://picsum.photos/seed/{sku}/400/400"),
+            ("s", faker.Random.Int(0, 500)), ("cid", catId), ("dt", createdAt));
+
+        products.Add((id, price, sku, name));
+    }
+}
+Console.WriteLine($"{categories.Count} categories, {products.Count} products ✓");
+
+// ── 3. orderdb ────────────────────────────────────────────────────────────────
+Console.Write("  Orders      ");
+await using (var conn = new NpgsqlConnection(Conn("orderdb")))
+{
+    await conn.OpenAsync();
+    await Exec(conn, """TRUNCATE TABLE "Orders","OrderItems" CASCADE;""");
+
+    var faker = new Faker("en");
+
+    // ~60% succeed (visa repeated 3×), ~40% decline — weighted by repetition
+    (string Method, bool Ok, string? Reason)[] cards =
+    [
+        ("pm_card_visa",                            true,  null),
+        ("pm_card_visa",                            true,  null),
+        ("pm_card_visa",                            true,  null),
+        ("pm_card_chargeDeclined",                  false, "Your card was declined."),
+        ("pm_card_chargeDeclinedInsufficientFunds", false, "Insufficient funds."),
+        ("pm_card_authenticationRequired",          false, "Authentication required."),
+    ];
+
+    for (var i = 0; i < 200; i++)
+    {
+        var customer  = faker.PickRandom(customers);
+        var card      = faker.PickRandom(cards);
+        var createdAt = DateTime.UtcNow.AddDays(-faker.Random.Double(0, 90));
+        var daysSince = (DateTime.UtcNow - createdAt).TotalDays;
+
+        // 1–4 unique products, qty 1–3 each
+        var itemCount = faker.Random.Int(1, 4);
+        var chosen    = faker.PickRandom(products, itemCount).Distinct().ToList();
+        var lineItems = chosen.Select(p =>
+        {
+            var qty = faker.Random.Int(1, 3);
+            return (Prod: p, Qty: qty, LineTotal: Math.Round(p.Price * qty, 2));
+        }).ToList();
+
+        var total = lineItems.Sum(l => l.LineTotal);
+
+        // Status ages naturally for succeeded cards; failed cards stay Pending or get Cancelled
+        string status = !card.Ok
+            ? faker.Random.WeightedRandom(new[] { "Pending", "Cancelled" }, new[] { 0.35f, 0.65f })
+            : daysSince < 2  ? "Paid"
+            : daysSince < 14 ? faker.Random.WeightedRandom(new[] { "Paid", "Shipped" },            new[] { 0.4f, 0.6f })
+            : daysSince < 45 ? faker.Random.WeightedRandom(new[] { "Shipped", "Delivered" },       new[] { 0.3f, 0.7f })
+            :                  "Delivered";
+
+        var updatedAt = status switch
+        {
+            "Paid"      => createdAt.AddMinutes(faker.Random.Double(5, 30)),
+            "Shipped"   => createdAt.AddDays(faker.Random.Double(0.5, 2)),
+            "Delivered" => createdAt.AddDays(faker.Random.Double(3, 10)),
+            "Cancelled" => createdAt.AddHours(faker.Random.Double(1, 24)),
+            _           => createdAt
+        };
+
+        var orderId = await Insert(conn,
+            """INSERT INTO "Orders" ("CustomerEmail","TotalAmount","Status","CreatedAt","UpdatedAt") VALUES (@c,@t,@st,@dt,@upd) RETURNING "Id";""",
+            ("c", customer.Email), ("t", total), ("st", status),
+            ("dt", createdAt), ("upd", updatedAt));
+
+        foreach (var (prod, qty, lineTotal) in lineItems)
+        {
+            await Exec(conn,
+                """INSERT INTO "OrderItems" ("OrderId","ProductId","ProductName","ProductSku","UnitPrice","Quantity","LineTotal") VALUES (@oid,@pid,@pn,@psku,@up,@qty,@lt);""",
+                ("oid", orderId), ("pid", prod.Id), ("pn", prod.Name),
+                ("psku", prod.Sku), ("up", prod.Price), ("qty", qty), ("lt", lineTotal));
+        }
+
+        var txId        = card.Ok ? "tx_" + faker.Random.AlphaNumeric(16) : string.Empty;
+        var processedAt = updatedAt.AddSeconds(faker.Random.Int(5, 90));
+        payments.Add(new PaymentSeed(orderId, total, txId, card.Method, card.Ok, card.Reason, processedAt));
+    }
+}
+Console.WriteLine($"{payments.Count} orders ✓");
+
+// ── 4. paymentdb ──────────────────────────────────────────────────────────────
+Console.Write("  Payments    ");
+await using (var conn = new NpgsqlConnection(Conn("paymentdb")))
+{
+    await conn.OpenAsync();
+    await Exec(conn, """TRUNCATE TABLE "Payments" CASCADE;""");
+
+    foreach (var p in payments)
+    {
+        await Exec(conn,
+            """INSERT INTO "Payments" ("OrderId","TransactionId","Amount","Method","Succeeded","ErrorMessage","ProcessedAt") VALUES (@o,@t,@a,@m,@s,@err,@dt);""",
+            ("o", p.OrderId), ("t", p.TransactionId), ("a", p.Amount),
+            ("m", p.Method), ("s", p.Succeeded),
+            ("err", (object?)p.ErrorMsg ?? DBNull.Value),
+            ("dt", p.ProcessedAt));
+    }
+}
+Console.WriteLine($"{payments.Count} records ✓");
+
+Console.WriteLine();
+Console.WriteLine("✅  Done!\n");
+Console.WriteLine("  Admin login     →  ipek@bambicim.com  /  Admin1234!");
+Console.WriteLine("  Customer login  →  any seeded email   /  Password123!");
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+static async Task Exec(NpgsqlConnection conn, string sql, params (string Name, object? Value)[] ps)
+{
+    await using var cmd = new NpgsqlCommand(sql, conn);
+    foreach (var (n, v) in ps)
+        cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
+    await cmd.ExecuteNonQueryAsync();
+}
+
+static async Task<int> Insert(NpgsqlConnection conn, string sql, params (string Name, object? Value)[] ps)
+{
+    await using var cmd = new NpgsqlCommand(sql, conn);
+    foreach (var (n, v) in ps)
+        cmd.Parameters.AddWithValue(n, v ?? DBNull.Value);
+    return (int)(await cmd.ExecuteScalarAsync() ?? 0);
+}
+
+record PaymentSeed(int OrderId, decimal Amount, string TransactionId, string Method, bool Succeeded, string? ErrorMsg, DateTime ProcessedAt);

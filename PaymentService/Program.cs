@@ -103,9 +103,9 @@ app.MapScalarApiReference(options =>
         .WithHttpBearerAuthentication(bearer => bearer.Token = "paste-your-jwt-token-here");
 });
 
-app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapControllers();
 app.MapHealthChecks("/health");
 app.MapGet("/", () => "PaymentService is running ✅");
 app.Run();

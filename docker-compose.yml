@@ -43,7 +43,7 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Pass: guest
-      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECommercePlatform
       Jwt__Audience: ECommercePlatform
     ports:
@@ -69,7 +69,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__PaymentDb: Host=postgres;Port=5432;Database=paymentdb;Username=postgres;Password=postgres
       Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
-      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECommercePlatform
       Jwt__Audience: ECommercePlatform
     ports:
@@ -97,11 +97,17 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: guest
       RabbitMQ__Pass: guest
-      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECommercePlatform
       Jwt__Audience: ECommercePlatform
     ports:
       - "5099:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       postgres:
         condition: service_healthy
@@ -120,7 +126,7 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__UserDb: Host=postgres;Port=5432;Database=userdb;Username=postgres;Password=postgres
-      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECommercePlatform
       Jwt__Audience: ECommercePlatform
       Jwt__ExpiryHours: "24"
@@ -143,7 +149,7 @@ services:
     container_name: apigateway
     environment:
       ASPNETCORE_URLS: http://+:8080
-      Jwt__Secret: super-secret-key-change-in-production-min-32-characters!!
+      Jwt__Secret: ${JWT_SECRET}
       Jwt__Issuer: ECommercePlatform
       Jwt__Audience: ECommercePlatform
       ReverseProxy__Clusters__users__Destinations__primary__Address: http://userservice:8080
@@ -164,9 +170,32 @@ services:
       catalogservice:
         condition: service_healthy
       orderservice:
-        condition: service_started
+        condition: service_healthy
       paymentservice:
-        condition: service_started
+        condition: service_healthy
+
+  dataseeder:
+    build:
+      context: ./DataSeeder
+      dockerfile: Dockerfile
+    container_name: dataseeder
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+    profiles:
+      - seed
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      userservice:
+        condition: service_healthy
+      catalogservice:
+        condition: service_healthy
+      orderservice:
+        condition: service_healthy
+      paymentservice:
+        condition: service_healthy
 
 volumes:
   pgdata:
